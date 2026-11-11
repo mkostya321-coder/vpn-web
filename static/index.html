@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>VPN App</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; background: #1a1a1a; color: #fff; }
+        button { padding: 15px 30px; font-size: 18px; background: #2ea6ff; color: white; border: none; border-radius: 10px; margin: 10px; }
+        #result { margin-top: 20px; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>VPN</h1>
+    <p>Нажми кнопку, чтобы получить ключ (5 устройств)</p>
+    <button onclick="createVpn()">Получить VPN</button>
+    <div id="result"></div>
+
+    <script>
+        const tg = Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        async function createVpn() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Создаю...';
+
+            // Получаем ID пользователя из Telegram
+            const userId = tg.initDataUnsafe?.user?.id;
+            if (!userId) {
+                resultDiv.textContent = 'Ошибка: не удалось получить ID. Открой из Telegram.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/create-vpn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_id: userId })
+                });
+                const data = await response.json();
+
+                if (data.ok) {
+                    resultDiv.innerHTML = '✅ Готово!<br>Ссылка: ' + data.subscription_url;
+                } else {
+                    resultDiv.textContent = '❌ Ошибка: ' + data.error;
+                }
+            } catch (e) {
+                resultDiv.textContent = '❌ Ошибка сети: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
