@@ -8,13 +8,25 @@
     <style>
         :root {
             --bg: #0f0f0f; --card-bg: #1c1c1e; --text: #ffffff; --text-muted: #8e8e93;
-            --accent: #007aff; --success: #34c759; --promo: #ff9500; --border: #2c2c2e;
+            --accent: #007aff; --success: #34c759; --promo: #ff9500; --border: #2c2c2e; --danger: #ff3b30;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        
+        /* Переливающийся фон */
+        body { 
+            background: linear-gradient(45deg, #0f0f0f, #2a2a2a, #0f0f0f);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; 
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
         /* Приветствие */
-        #welcome-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #111 0%, #1a1a2e 100%); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; transition: opacity 0.5s; }
+        #welcome-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; transition: opacity 0.5s; }
         #welcome-screen h1 { font-size: 40px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(90deg, #007aff, #00c6ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
         .btn-continue { background: var(--accent); color: white; border: none; padding: 18px 40px; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4); }
 
@@ -28,7 +40,7 @@
         .menu-item.active { background: var(--accent); color: white; }
 
         /* Шапка */
-        .header { display: flex; align-items: center; padding: 15px; background: var(--bg); position: sticky; top: 0; z-index: 100; }
+        .header { display: flex; align-items: center; padding: 15px; background: rgba(15,15,15,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
         .burger { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; }
         .header-title { font-size: 20px; font-weight: bold; flex: 1; text-align: center; padding-right: 30px;}
         .back-btn { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; display: none; }
@@ -37,13 +49,14 @@
         .main-content { padding: 15px; padding-bottom: 80px; flex: 1; }
         .card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 15px; }
         .balance-value { font-size: 24px; font-weight: bold; }
-        .btn { background: var(--accent); color: white; border: none; padding: 12px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center;}
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center; width: 100%;}
         .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: var(--border); color: var(--text-muted); }
         
         /* Тарифы со стрелками */
-        .plans-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-        .scroll-arrow { font-size: 24px; color: var(--text-muted); cursor: pointer; padding: 10px; user-select: none; }
-        .plans-container { display: flex; gap: 10px; overflow-x: auto; padding: 15px 5px; scrollbar-width: none; flex: 1; scroll-behavior: smooth; }
+        .plans-wrapper { display: flex; align-items: center; gap: 5px; margin-top: 10px; }
+        .scroll-arrow { font-size: 14px; color: var(--text-muted); padding: 5px; pointer-events: none; user-select: none; opacity: 0.5;}
+        .plans-container { display: flex; gap: 10px; overflow-x: auto; padding: 15px 5px; scrollbar-width: none; flex: 1; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
         .plans-container::-webkit-scrollbar { display: none; }
         .plan-btn { flex: 0 0 100px; background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 15px 5px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; }
         .plan-btn.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.1); }
@@ -51,18 +64,17 @@
         .plan-devices { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
         .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; }
         
-        /* Колесо */
-        .wheel-container { text-align: center; position: relative; margin: 20px 0; }
+        /* Колесо и кулдаун */
+        .wheel-container { position: relative; text-align: center; margin: 20px 0; display: flex; justify-content: center; }
         .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
         canvas { transition: transform 4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .cooldown-overlay { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: rgba(0,0,0,0.85); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 20; border: 2px solid var(--border); }
         
-        /* История */
+        /* История и формы */
         .history-list { list-style: none; margin-top: 10px; }
         .history-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
         .history-list li:last-child { border-bottom: none; }
-
-        /* Формы */
-        input[type="text"], textarea, input[type="number"] { width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
+        input[type="text"], input[type="password"], input[type="number"], textarea { width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
         textarea { resize: vertical; min-height: 100px; }
 
         .footer { padding: 20px; text-align: center; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: auto; }
@@ -88,7 +100,7 @@
         <div class="menu-item" id="tab-support" onclick="switchTab('support')">🆘 Поддержка</div>
         
         <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 10px;">
-            <div class="menu-item" style="color: var(--promo);" onclick="switchTab('admin')">⚙️ Войти в АдмПрофиль</div>
+            <div class="menu-item" style="color: var(--promo);" id="tab-admin-login" onclick="switchTab('admin-login')">⚙️ Войти в АдмПрофиль</div>
         </div>
     </div>
 
@@ -107,7 +119,7 @@
                     <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Ваш баланс</div>
                     <div class="balance-value" id="home-balance">0 ₽</div>
                 </div>
-                <button class="btn" onclick="tg.showAlert('Пополнение появится позже!')">+ Пополнить</button>
+                <button class="btn" style="width: auto;" onclick="tg.showAlert('Пополнение появится позже!')">+ Пополнить</button>
             </div>
 
             <div class="card" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
@@ -118,12 +130,12 @@
             <div style="font-size: 16px; font-weight: bold; margin-top: 20px;">Выберите ежедневный тариф:</div>
             
             <div class="plans-wrapper">
-                <div class="scroll-arrow" onclick="document.getElementById('plans-container').scrollBy({left: -120, behavior: 'smooth'})">❮</div>
+                <div class="scroll-arrow">❮</div>
                 <div class="plans-container" id="plans-container"></div>
-                <div class="scroll-arrow" onclick="document.getElementById('plans-container').scrollBy({left: 120, behavior: 'smooth'})">❯</div>
+                <div class="scroll-arrow">❯</div>
             </div>
             
-            <button class="btn" style="width: 100%; margin-top: 15px; font-size: 16px; padding: 15px;" onclick="switchTab('connect')">Подключить VPN</button>
+            <button class="btn" style="margin-top: 15px; padding: 15px;" onclick="switchTab('connect')">Подключить VPN</button>
         </div>
 
         <!-- ЭКРАН ПОДКЛЮЧЕНИЯ -->
@@ -132,7 +144,7 @@
             <div class="card">
                 <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">1. Скопируйте ссылку подписки</div>
                 <div style="background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin: 10px 0; border: 1px solid var(--border); color: var(--success);" id="sub-link">vless://dummy-link-for-now@127.0.0.1:443</div>
-                <button class="btn" style="width: 100%;" onclick="copyLink()">Скопировать ссылку</button>
+                <button class="btn" onclick="copyLink()">Скопировать ссылку</button>
             </div>
             <div class="card">
                 <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">2. Установите клиент</div>
@@ -148,10 +160,6 @@
                     <div style="width: 40px; height: 40px; background: #ff9500; color: white; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: bold; margin-right: 15px;">H</div>
                     <div><h4>Hiddify</h4><p style="color: var(--text-muted); font-size: 12px;">Windows, macOS, Linux, Android, iOS</p></div>
                 </div>
-            </div>
-            <div class="card">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">3. Вставьте ссылку</div>
-                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">Откройте выбранное приложение, найдите кнопку «+» или «Добавить подписку по ссылке» и вставьте скопированную ссылку.</p>
             </div>
         </div>
 
@@ -170,7 +178,6 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px;">
                     <div><div style="font-size: 12px; color: var(--text-muted);">Баланс</div><div class="balance-value" id="profile-balance">0 ₽</div></div>
-                    <button class="btn" onclick="tg.showAlert('Пополнение появится позже!')">Пополнить</button>
                 </div>
             </div>
 
@@ -178,7 +185,6 @@
                 <h3 style="font-size: 16px; margin-bottom: 10px;">История пополнений</h3>
                 <ul class="history-list" id="topup-history"><li style="color: var(--text-muted);">Пока пусто</li></ul>
             </div>
-
             <div class="card">
                 <h3 style="font-size: 16px; margin-bottom: 10px;">История Колеса Фортуны</h3>
                 <ul class="history-list" id="wheel-history"><li style="color: var(--text-muted);">Пока пусто</li></ul>
@@ -190,11 +196,11 @@
             <div class="card">
                 <h3 style="text-align: center;">Колесо Фортуны</h3>
                 <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">1 вращение в 7 дней</p>
-                <div class="wheel-container">
+                <div class="wheel-container" id="wheel-wrapper">
                     <div class="wheel-pointer">▼</div>
                     <canvas id="wheelCanvas" width="300" height="300"></canvas>
                 </div>
-                <button class="btn" id="spin-btn" style="width: 100%; margin-top: 10px;" onclick="spinWheel()">Крутить</button>
+                <button class="btn" id="spin-btn" style="margin-top: 10px;" onclick="spinWheel()">Крутить</button>
             </div>
         </div>
 
@@ -205,18 +211,54 @@
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Опишите вашу проблему, и мы ответим вам в ближайшее время.</p>
                 <input type="text" id="support-subject" placeholder="Тема (например: Не работает VPN)">
                 <textarea id="support-msg" placeholder="Подробно опишите проблему..."></textarea>
-                <button class="btn" style="width: 100%;" onclick="sendSupport()">Отправить в поддержку</button>
+                <button class="btn" onclick="sendSupport()">Отправить в поддержку</button>
             </div>
         </div>
 
-        <!-- АДМИНКА -->
-        <div id="view-admin" style="display: none;">
+        <!-- ТАРИФЫ (ИСПРАВЛЕН БАГ ОТОБРАЖЕНИЯ) -->
+        <div id="view-tariffs" style="display: none;">
+            <h3 style="margin-bottom: 15px;">Все тарифы</h3>
+            <div class="card" style="padding: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>1 устройство</span><span><b>186 ₽ / мес</b> (6 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>2 устройства</span><span><b>217 ₽ / мес</b> (7 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>3 устройства</span><span><b>248 ₽ / мес</b> (8 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>4 устройства (Акция)</span><span><b>248 ₽ / мес</b> (8 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>5 устройств</span><span><b>279 ₽ / мес</b> (9 ₽/день)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВХОД В АДМИНКУ -->
+        <div id="view-admin-login" style="display: none;">
             <div class="card">
-                <h3 style="margin-bottom: 10px; color: var(--promo);">Админ-панель</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Управление балансами пользователей.</p>
+                <h3 style="margin-bottom: 10px;">Вход в Админ-панель</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Используйте логин и пароль, выданные владельцем в боте.</p>
+                <input type="text" id="admin-login" placeholder="Логин">
+                <input type="password" id="admin-pass" placeholder="Пароль">
+                <button class="btn" onclick="checkAdminLogin()">Войти</button>
+            </div>
+        </div>
+
+        <!-- САМА АДМИНКА -->
+        <div id="view-admin-panel" style="display: none;">
+            <div class="card">
+                <h3 style="margin-bottom: 10px; color: var(--promo);">Управление балансом</h3>
                 <input type="number" id="admin-user-id" placeholder="Telegram ID пользователя">
-                <input type="number" id="admin-amount" placeholder="Сумма (например: 250)">
-                <button class="btn" style="width: 100%;" onclick="adminAddBalance()">Начислить баланс</button>
+                <input type="number" id="admin-amount" placeholder="Сумма пополнения">
+                <button class="btn" onclick="adminAddBalance()">Начислить</button>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom: 10px; color: var(--promo);">Управление колесом</h3>
+                <button class="btn" style="background: var(--danger);" onclick="resetCooldownAll()">Сбросить кулдаун для всех</button>
             </div>
         </div>
 
@@ -232,7 +274,6 @@
         tg.ready();
         tg.expand();
 
-        // Инициализация состояния (по умолчанию 250 руб для теста)
         let state = {
             balance: 250, 
             nickname: localStorage.getItem('nc_vpn_nickname') || 'User_' + Math.floor(Math.random() * 9000 + 1000),
@@ -265,10 +306,10 @@
             document.getElementById('view-' + tab).style.display = 'block';
             if(document.getElementById('tab-' + tab)) document.getElementById('tab-' + tab).classList.add('active');
             
-            const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', support: 'Поддержка', admin: 'Админка', connect: 'Подключение' };
+            const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', support: 'Поддержка', 'admin-login': 'Вход', 'admin-panel': 'Админка', connect: 'Подключение' };
             document.getElementById('header-title').textContent = titles[tab];
 
-            if (tab === 'connect') {
+            if (tab === 'connect' || tab === 'admin-panel' || tab === 'admin-login') {
                 document.getElementById('burger-btn').style.display = 'none';
                 document.getElementById('back-btn').style.display = 'block';
             } else {
@@ -277,7 +318,7 @@
             }
 
             if (document.getElementById('sidebar').classList.contains('open')) toggleMenu();
-            updateUI(); // Обновляем данные при переходе
+            updateUI();
         }
 
         // ===== ТАРИФЫ =====
@@ -301,7 +342,6 @@
                 div.classList.add('active');
                 updateUI();
             };
-            
             div.innerHTML = `
                 ${plan.promo ? `<div class="promo-badge">${plan.promoText}</div>` : ''}
                 <div class="plan-devices">${plan.devices} устр.</div>
@@ -310,32 +350,22 @@
             container.appendChild(div);
         });
 
-        // ===== UI ОБНОВЛЕНИЕ =====
+        // ===== UI =====
         function updateUI() {
-            // Баланс
             document.getElementById('home-balance').textContent = state.balance + ' ₽';
             document.getElementById('profile-balance').textContent = state.balance + ' ₽';
             document.getElementById('user-nickname').textContent = state.nickname;
             
-            // Дни (Правильный расчет!)
             const days = Math.floor(state.balance / selectedPlan.priceDay);
             document.getElementById('days-left').textContent = days + ' дней';
 
-            // История пополнений
             const topupList = document.getElementById('topup-history');
-            if (state.topupHistory.length === 0) {
-                topupList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
-            } else {
-                topupList.innerHTML = state.topupHistory.map(item => `<li><span>${item.date}</span><b style="color:var(--success);">+${item.amount} ₽</b></li>`).join('');
-            }
+            if (state.topupHistory.length === 0) topupList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
+            else topupList.innerHTML = state.topupHistory.map(item => `<li><span>${item.date}</span><b style="color:var(--success);">+${item.amount} ₽</b></li>`).join('');
 
-            // История колеса
             const wheelList = document.getElementById('wheel-history');
-            if (state.wheelHistory.length === 0) {
-                wheelList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
-            } else {
-                wheelList.innerHTML = state.wheelHistory.map(item => `<li><span>${item.date}</span><span>${item.prize}</span></li>`).join('');
-            }
+            if (state.wheelHistory.length === 0) wheelList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
+            else wheelList.innerHTML = state.wheelHistory.map(item => `<li><span>${item.date}</span><span>${item.prize}</span></li>`).join('');
         }
 
         function changeNickname() {
@@ -352,7 +382,6 @@
             const subject = document.getElementById('support-subject').value;
             const msg = document.getElementById('support-msg').value;
             const tgId = tg.initDataUnsafe?.user?.id || 123;
-            
             if (!subject || !msg) return tg.showAlert('Заполните все поля!');
 
             try {
@@ -363,7 +392,7 @@
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    tg.showAlert('Обращение отправлено! Мы скоро ответим.');
+                    tg.showAlert('Обращение отправлено!');
                     document.getElementById('support-subject').value = '';
                     document.getElementById('support-msg').value = '';
                 } else {
@@ -372,20 +401,34 @@
             } catch(e) { tg.showAlert('Ошибка сети'); }
         }
 
+        function checkAdminLogin() {
+            const login = document.getElementById('admin-login').value;
+            const pass = document.getElementById('admin-pass').value;
+            // Временный пароль (потом заменим на генерацию из бота)
+            if (login === 'admin' && pass === 'admin') {
+                tg.showAlert('Успешный вход!');
+                switchTab('admin-panel');
+            } else {
+                tg.showAlert('Неверный логин или пароль!');
+            }
+        }
+
         async function adminAddBalance() {
             const targetId = document.getElementById('admin-user-id').value;
             const amount = document.getElementById('admin-amount').value;
             if (!targetId || !amount) return tg.showAlert('Заполните ID и сумму');
+            tg.showAlert(`Баланс пользователя ${targetId} пополнен на ${amount}₽ (Заглушка)`);
+        }
 
-            try {
-                const res = await fetch('/api/admin/balance', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target_user_id: targetId, amount: amount })
-                });
-                const data = await res.json();
-                tg.showAlert(data.message || 'Готово');
-            } catch(e) { tg.showAlert('Ошибка сети'); }
+        function resetCooldownAll() {
+            tg.showConfirm('Вы уверены, что хотите сбросить кулдаун колеса ДЛЯ ВСЕХ пользователей?', (ok) => {
+                if (ok) {
+                    state.lastSpin = 0;
+                    localStorage.setItem('nc_vpn_lastSpin', 0);
+                    tg.showAlert('Кулдаун сброшен для всех!');
+                    updateCooldownUI();
+                }
+            });
         }
 
         // ===== КОЛЕСО =====
@@ -395,35 +438,17 @@
         const centerY = canvas.height / 2;
         const radius = 140;
 
-        // 27 слотов - РАСПРЕДЕЛЕНЫ ВРУЧНУЮ, чтобы не было скучкованности
+        // 27 слотов (12 lose, 8x6₽, 4x10₽, 2x50₽, 1x186₽) - Перемешано
         const wheelItems = [
-            { label: '186₽', color: '#ff3b30' }, // 1
-            { label: '0', color: '#555555' },    // 2
-            { label: '6₽', color: '#34c759' },   // 3
-            { label: '0', color: '#555555' },    // 4
-            { label: '10₽', color: '#007aff' },  // 5
-            { label: '0', color: '#555555' },    // 6
-            { label: '6₽', color: '#34c759' },   // 7
-            { label: '50₽', color: '#ff2d55' },  // 8
-            { label: '0', color: '#555555' },    // 9
-            { label: '6₽', color: '#34c759' },   // 10
-            { label: '10₽', color: '#007aff' },  // 11
-            { label: '0', color: '#555555' },    // 12
-            { label: '0', color: '#555555' },    // 13
-            { label: '6₽', color: '#34c759' },   // 14
-            { label: '50₽', color: '#ff2d55' },  // 15
-            { label: '0', color: '#555555' },    // 16
-            { label: '10₽', color: '#007aff' },  // 17
-            { label: '6₽', color: '#34c759' },   // 18
-            { label: '0', color: '#555555' },    // 19
-            { label: '6₽', color: '#34c759' },   // 20
-            { label: '0', color: '#555555' },    // 21
-            { label: '10₽', color: '#007aff' },  // 22
-            { label: '0', color: '#555555' },    // 23
-            { label: '0', color: '#555555' },    // 24
-            { label: '0', color: '#555555' },    // 25
-            { label: '0', color: '#555555' },    // 26
-            { label: '0', color: '#555555' }     // 27
+            { label: '186₽', color: '#ff3b30' }, { label: '0', color: '#555555' }, { label: '6₽', color: '#34c759' }, 
+            { label: '0', color: '#555555' }, { label: '10₽', color: '#007aff' }, { label: '0', color: '#555555' }, 
+            { label: '6₽', color: '#34c759' }, { label: '50₽', color: '#ff2d55' }, { label: '0', color: '#555555' }, 
+            { label: '6₽', color: '#34c759' }, { label: '10₽', color: '#007aff' }, { label: '0', color: '#555555' }, 
+            { label: '0', color: '#555555' }, { label: '6₽', color: '#34c759' }, { label: '50₽', color: '#ff2d55' }, 
+            { label: '0', color: '#555555' }, { label: '10₽', color: '#007aff' }, { label: '6₽', color: '#34c759' }, 
+            { label: '0', color: '#555555' }, { label: '6₽', color: '#34c759' }, { label: '0', color: '#555555' }, 
+            { label: '10₽', color: '#007aff' }, { label: '0', color: '#555555' }, { label: '0', color: '#555555' }, 
+            { label: '6₽', color: '#34c759' }, { label: '0', color: '#555555' }, { label: '0', color: '#555555' }
         ];
 
         function drawWheel() {
@@ -431,41 +456,62 @@
             for (let i = 0; i < wheelItems.length; i++) {
                 const startAngle = i * anglePerItem;
                 const endAngle = startAngle + anglePerItem;
-                ctx.beginPath();
-                ctx.fillStyle = wheelItems[i].color;
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-                ctx.fill();
-                ctx.strokeStyle = '#1c1c1e';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                ctx.beginPath(); ctx.fillStyle = wheelItems[i].color;
+                ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.fill(); ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 2; ctx.stroke();
 
-                ctx.save();
-                ctx.translate(centerX, centerY);
-                ctx.rotate(startAngle + anglePerItem / 2);
-                ctx.textAlign = 'right';
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillText(wheelItems[i].label, radius - 10, 5);
-                ctx.restore();
+                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(startAngle + anglePerItem / 2);
+                ctx.textAlign = 'right'; ctx.fillStyle = 'white'; ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(wheelItems[i].label, radius - 10, 5); ctx.restore();
             }
             ctx.beginPath(); ctx.fillStyle = '#1c1c1e'; ctx.arc(centerX, centerY, 30, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 4; ctx.stroke();
         }
         drawWheel();
 
+        // Логика таймера
+        let timerInterval;
+        function updateCooldownUI() {
+            const wrapper = document.getElementById('wheel-wrapper');
+            const existingOverlay = document.getElementById('cooldown-overlay');
+            const now = Date.now();
+            const CD_7_DAYS = 7 * 24 * 60 * 60 * 1000;
+            const timeLeft = CD_7_DAYS - (now - state.lastSpin);
+
+            if (state.lastSpin > 0 && timeLeft > 0) {
+                if (!existingOverlay) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'cooldown-overlay';
+                    overlay.className = 'cooldown-overlay';
+                    overlay.innerHTML = '<div style="font-size:14px; color:var(--text-muted); margin-bottom:5px;">Следующее вращение через:</div><div id="cooldown-time" style="font-size:22px; font-weight:bold; color:var(--promo); font-family:monospace;">00:00:00</div>';
+                    wrapper.appendChild(overlay);
+                }
+                
+                const h = Math.floor(timeLeft / (1000 * 60 * 60));
+                const m = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                document.getElementById('cooldown-time').textContent = `${h}ч.${m.toString().padStart(2, '0')}м.${s.toString().padStart(2, '0')}с`;
+                
+                document.getElementById('spin-btn').disabled = true;
+                document.getElementById('spin-btn').textContent = 'Кулдаун';
+            } else {
+                if (existingOverlay) existingOverlay.remove();
+                document.getElementById('spin-btn').disabled = false;
+                document.getElementById('spin-btn').textContent = 'Крутить';
+            }
+        }
+        
+        // Запускаем таймер каждую секунду
+        setInterval(updateCooldownUI, 1000);
+
         let currentRotation = 0;
         function spinWheel() {
             const now = Date.now();
             const CD_7_DAYS = 7 * 24 * 60 * 60 * 1000;
-            
-            if (state.lastSpin > 0 && now - state.lastSpin < CD_7_DAYS) {
-                return tg.showAlert('Кулдаун! Крутить можно раз в 7 дней.');
-            }
+            if (state.lastSpin > 0 && now - state.lastSpin < CD_7_DAYS) return;
 
             const btn = document.getElementById('spin-btn');
-            btn.disabled = true;
-            btn.textContent = 'Крутится...';
+            btn.disabled = true; btn.textContent = 'Крутится...';
 
             const winIndex = Math.floor(Math.random() * wheelItems.length);
             const prize = wheelItems[winIndex];
@@ -476,38 +522,29 @@
             canvas.style.transform = `rotate(${currentRotation}deg)`;
 
             setTimeout(() => {
-                let msg = '';
-                let historyText = '';
-                const dateStr = new Date().toLocaleDateString();
+                let msg = ''; let historyText = ''; const dateStr = new Date().toLocaleDateString();
 
                 if (prize.label === '0') {
-                    msg = 'Lose! В следующий раз повезет.';
-                    historyText = 'Lose';
+                    msg = 'Lose! В следующий раз повезет.'; historyText = 'Lose';
                 } else if (prize.label === '186₽') {
-                    msg = '🏆 БЕЗЛИМИТ НА МЕСЯЦ! (186₽ на баланс)';
-                    state.balance += 186;
-                    historyText = '+186 ₽ (Безлимит)';
+                    msg = '🏆 БЕЗЛИМИТ НА МЕСЯЦ!'; state.balance += 186; historyText = '+186 ₽';
                 } else {
-                    msg = `Вы выиграли ${prize.label}!`;
-                    state.balance += parseInt(prize.label);
-                    historyText = `+${prize.label}`;
+                    msg = `Вы выиграли ${prize.label}!`; state.balance += parseInt(prize.label); historyText = `+${prize.label}`;
                 }
 
-                // Сохраняем историю и кд
                 state.lastSpin = now;
                 state.wheelHistory.unshift({ date: dateStr, prize: historyText });
                 localStorage.setItem('nc_vpn_lastSpin', state.lastSpin);
                 localStorage.setItem('nc_vpn_wheel', JSON.stringify(state.wheelHistory));
 
                 tg.showAlert(msg);
-                btn.disabled = false;
-                btn.textContent = 'Крутить';
-                updateUI(); // Мгновенно обновляем баланс и дни
+                updateUI();
+                updateCooldownUI();
             }, 4000);
         }
 
-        // Инициализация при загрузке
         updateUI();
+        updateCooldownUI();
     </script>
 </body>
 </html>
