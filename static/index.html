@@ -15,6 +15,7 @@
             --accent-hover: #0056b3;
             --success: #34c759;
             --promo: #ff9500;
+            --danger: #ff3b30;
             --border: #2c2c2e;
         }
 
@@ -23,159 +24,261 @@
         body {
             background-color: var(--bg);
             color: var(--text);
-            padding: 15px;
             display: flex;
             flex-direction: column;
-            align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        .container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 30px; }
-
-        /* Профиль */
-        .profile {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 10px;
+        /* ===== БОКОВОЕ МЕНЮ ===== */
+        .sidebar {
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+            background: var(--card-bg); z-index: 1000; transition: 0.3s;
+            padding: 20px; border-right: 1px solid var(--border);
         }
-        .avatar {
-            width: 50px; height: 50px; border-radius: 50%;
-            background: linear-gradient(135deg, #007aff, #00c6ff);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 20px; font-weight: bold;
+        .sidebar.open { left: 0; }
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 999; display: none; opacity: 0; transition: 0.3s;
         }
-        .profile-info h2 { font-size: 18px; }
-        .profile-info p { color: var(--text-muted); font-size: 13px; }
-
-        /* Карточки */
-        .card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--border);
-        }
-
-        /* Баланс */
-        .balance-card { display: flex; justify-content: space-between; align-items: center; }
-        .balance-amount { font-size: 28px; font-weight: bold; margin-top: 5px; }
-        .btn-topup {
-            background: rgba(0, 122, 255, 0.15);
-            color: var(--accent);
-            border: none; padding: 10px 15px;
-            border-radius: 10px; font-weight: 600; cursor: pointer;
-        }
-
-        /* Статистика */
-        .stats-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;
-        }
-        .stat-item {
-            background: var(--bg); padding: 12px; border-radius: 12px; text-align: center;
-        }
-        .stat-title { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
-        .stat-value { font-size: 16px; font-weight: 600; color: var(--success); }
-
-        /* Лояльность */
-        .loyalty-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; }
-        .progress-bar { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; width: 60%; background: linear-gradient(90deg, #ff9500, #ffcc00); border-radius: 4px; }
-
-        /* Тарифы */
-        .plans-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
-        .plans-container::-webkit-scrollbar { display: none; }
+        .overlay.open { display: block; opacity: 1; }
         
+        .menu-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 15px; border-radius: 10px; margin-bottom: 5px;
+            cursor: pointer; font-weight: 600; color: var(--text);
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.05); }
+        .menu-item.active { background: var(--accent); color: white; }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            display: flex; align-items: center; padding: 15px;
+            background: var(--bg); position: sticky; top: 0; z-index: 100;
+        }
+        .burger { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; }
+        .header-title { font-size: 20px; font-weight: bold; flex: 1; text-align: center; padding-right: 30px;}
+
+        /* ===== КОНТЕНТ ===== */
+        .main-content { padding: 15px; padding-bottom: 80px; flex: 1; }
+        
+        .card {
+            background: var(--card-bg); border-radius: 16px;
+            padding: 20px; border: 1px solid var(--border); margin-bottom: 15px;
+        }
+
+        /* Профиль и Баланс */
+        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .avatar {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, #007aff, #00c6ff);
+            display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold;
+        }
+        .profile-name { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px;}
+        .edit-icon { cursor: pointer; font-size: 14px; color: var(--accent); }
+
+        .balance-box { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px; margin-top: 15px; }
+        .balance-value { font-size: 24px; font-weight: bold; }
+        .btn { background: var(--accent); color: white; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
+
+        /* Тарифы (Главная) */
+        .plans-container { display: flex; gap: 10px; overflow-x: auto; padding-top: 15px; padding-bottom: 10px; scrollbar-width: none; }
+        .plans-container::-webkit-scrollbar { display: none; }
         .plan-btn {
-            flex: 0 0 110px; background: var(--card-bg);
-            border: 2px solid var(--border); border-radius: 14px;
-            padding: 15px 10px; text-align: center; cursor: pointer;
-            position: relative; transition: all 0.2s;
+            flex: 0 0 110px; background: var(--bg); border: 2px solid var(--border);
+            border-radius: 14px; padding: 20px 10px; text-align: center;
+            position: relative; cursor: pointer; transition: 0.2s;
         }
         .plan-btn.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.1); }
-        
         .promo-badge {
             position: absolute; top: -10px; right: -5px;
             background: var(--promo); color: white; font-size: 10px; font-weight: bold;
-            padding: 2px 6px; border-radius: 6px;
+            padding: 3px 8px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
         .plan-devices { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
         .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
         .plan-price-month { font-size: 11px; color: var(--text-muted); }
 
-        /* Кнопка */
-        .action-btn {
-            width: 100%; padding: 18px; font-size: 16px; font-weight: 600;
-            color: white; background: var(--accent); border: none; border-radius: 14px;
-            cursor: pointer; margin-top: 10px; transition: 0.2s;
+        /* Колесо фортуны */
+        .wheel-container { text-align: center; position: relative; margin: 20px 0; }
+        .wheel {
+            width: 200px; height: 200px; border-radius: 50%; margin: 0 auto;
+            background: conic-gradient(#ff3b30 0deg 12deg, #1c1c1e 12deg 360deg);
+            border: 4px solid var(--border); position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); transition: transform 3s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        .action-btn:active { transform: scale(0.98); }
-        .action-btn:disabled { background: var(--border); color: var(--text-muted); }
+        .wheel-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; background: var(--accent); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-weight: bold;
+        }
+        .wheel-pointer {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 10px solid transparent;
+            border-right: 10px solid transparent; border-top: 20px solid white; z-index: 10;
+        }
+        .prizes-list { font-size: 12px; color: var(--text-muted); margin-top: 15px; text-align: left; line-height: 1.6; }
+        
+        /* Модальное окно (Ключ) */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: var(--card-bg); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; text-align: center;
+        }
+        .key-box {
+            background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all;
+            margin: 15px 0; border: 1px solid var(--border); color: var(--success); text-align: left;
+        }
 
-        .result-box {
-            display: none; word-break: break-all; font-family: monospace; font-size: 12px;
-            background: #000; padding: 15px; border-radius: 10px;
-            border: 1px solid var(--border); color: var(--success); margin-top: 10px;
+        /* Футер */
+        .footer {
+            padding: 20px; text-align: center; font-size: 13px; color: var(--text-muted);
+            border-top: 1px solid var(--border); margin-top: auto;
         }
+        .footer a { color: var(--accent); text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Профиль -->
-        <div class="profile">
-            <div class="avatar" id="user-avatar">U</div>
-            <div class="profile-info">
-                <h2>NC VPN</h2>
-                <p id="user-name">Загрузка...</p>
-            </div>
-        </div>
+    <!-- Оверлей (Затемнение при открытом меню) -->
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
-        <!-- Баланс -->
-        <div class="card balance-card">
-            <div>
-                <div style="font-size: 13px; color: var(--text-muted);">Текущий баланс</div>
-                <div class="balance-amount">250 <span style="font-size: 18px;">₽</span></div>
-            </div>
-            <button class="btn-topup" onclick="tg.showAlert('Пополнение баланса появится на следующем этапе!')">+ Пополнить</button>
-        </div>
+    <!-- Боковое меню -->
+    <div class="sidebar" id="sidebar">
+        <h2 style="margin-bottom: 20px; text-align: center;">NC VPN</h2>
+        <div class="menu-item active" id="tab-home" onclick="switchTab('home')">🏠 Главная</div>
+        <div class="menu-item" id="tab-profile" onclick="switchTab('profile')">👤 Профиль</div>
+        <div class="menu-item" id="tab-wheel" onclick="switchTab('wheel')">🎡 Колесо фортуны</div>
+        <div class="menu-item" id="tab-tariffs" onclick="switchTab('tariffs')">💳 Тарифы</div>
+    </div>
 
-        <!-- Статистика -->
-        <div class="card">
-            <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Статистика</div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-title">Статус</div>
-                    <div class="stat-value" style="color: var(--success);">Активен</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-title">Трафик</div>
-                    <div class="stat-value" style="color: var(--text);">1.4 ГБ</div>
+    <!-- Шапка -->
+    <div class="header">
+        <div class="burger" onclick="toggleMenu()">☰</div>
+        <div class="header-title" id="header-title">Главная</div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="main-content" id="main-content">
+        
+        <!-- ВКЛАДКА: ГЛАВНАЯ -->
+        <div id="view-home">
+            <div class="card">
+                <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Ваш баланс</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="balance-value">250 ₽</div>
+                    <button class="btn" onclick="tg.showAlert('Пополнение баланса появится позже!')">+ Пополнить</button>
                 </div>
             </div>
-        </div>
 
-        <!-- Лояльность -->
-        <div class="card">
-            <div class="loyalty-title">
-                <span>До бесплатного дня</span>
-                <span style="color: var(--promo); font-weight: bold;">60%</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Оплачивайте вовремя и получите 1 день бесплатно!</div>
-        </div>
-
-        <!-- Тарифы -->
-        <div style="margin-top: 5px;">
-            <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Выберите количество устройств:</div>
+            <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px; margin-top: 20px;">Выберите тариф для покупки:</div>
             <div class="plans-container" id="plans-container">
-                <!-- Тарифы рендерятся через JS -->
+                <!-- Рендерится через JS -->
+            </div>
+            <button class="btn" style="width: 100%; margin-top: 15px;" onclick="buyVpn()">Купить выбранный тариф</button>
+        </div>
+
+        <!-- ВКЛАДКА: ПРОФИЛЬ -->
+        <div id="view-profile" style="display: none;">
+            <div class="card">
+                <div class="profile-header">
+                    <div class="avatar" id="user-avatar">U</div>
+                    <div>
+                        <div class="profile-name">
+                            <span id="user-nickname">User_1234</span>
+                            <span class="edit-icon" onclick="changeNickname()">✏️ Изменить</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 13px;" id="user-tg-name">Telegram User</div>
+                    </div>
+                </div>
+                
+                <div class="balance-box">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Баланс</div>
+                        <div class="balance-value">250 ₽</div>
+                    </div>
+                    <button class="btn" onclick="tg.showAlert('Пополнение баланса появится позже!')">Пополнить</button>
+                </div>
             </div>
         </div>
 
-        <button class="action-btn" id="connect-btn" onclick="createVpn()">Оплатить и подключить</button>
-        <div class="result-box" id="result-box"></div>
+        <!-- ВКЛАДКА: КОЛЕСО ФОРТУНЫ -->
+        <div id="view-wheel" style="display: none;">
+            <div class="card">
+                <h3 style="text-align: center; margin-bottom: 10px;">Колесо Фортуны</h3>
+                <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                    Доступно после пополнения на 300 ₽. 1 вращение в 7 дней.
+                </p>
+
+                <div class="wheel-container">
+                    <div class="wheel-pointer"></div>
+                    <div class="wheel" id="wheel">
+                        <div class="wheel-center">Spin</div>
+                    </div>
+                </div>
+
+                <button class="btn" id="spin-btn" style="width: 100%;" onclick="spinWheel()">Крутить (Бесплатно)</button>
+
+                <div class="prizes-list">
+                    <b>Призы на колесе:</b><br>
+                    🎁 Перекрути (Респин) — 14 слотов<br>
+                    💰 10 Rub — 4 слота<br>
+                    💰 6 Rub — 6 слотов<br>
+                    💰 50 RUB — 2 слота<br>
+                    🏆 Бесплатный месяц — 1 слот<br>
+                    ❌ Lose (КД 7 дней) — 3 слота
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА: ТАРИФЫ -->
+        <div id="view-tariffs" style="display: none;">
+            <h3 style="margin-bottom: 15px;">Все тарифы</h3>
+            <div class="card" style="padding: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>1 устройство</span>
+                    <span><b>186 ₽ / мес</b> (6 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>2 устройства</span>
+                    <span><b>217 ₽ / мес</b> (7 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>3 устройства</span>
+                    <span><b>248 ₽ / мес</b> (8 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                    <span>4 устройства (Акция)</span>
+                    <span><b>248 ₽ / мес</b> (8 ₽/день)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>5 устройств</span>
+                    <span><b>279 ₽ / мес</b> (9 ₽/день)</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Модальное окно с ключом -->
+    <div class="modal" id="key-modal">
+        <div class="modal-content">
+            <h2 style="color: var(--success); margin-bottom: 10px;">✅ Оплачено!</h2>
+            <p style="font-size: 14px;">Ваш ключ для подключения:</p>
+            <div class="key-box" id="modal-key">vless://...</div>
+            <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="copyKey()">Скопировать</button>
+            <button class="btn" style="width: 100%; background: var(--border);" onclick="closeModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Футер -->
+    <div class="footer">
+        Telegram канал NC - <a href="https://t.me/newchapterjob" target="_blank">@newchapterjob</a><br><br>
+        Бот для заработка - <a href="https://t.me/ncjobbot" target="_blank">@ncjobbot</a>
     </div>
 
     <script>
@@ -183,14 +286,69 @@
         tg.ready();
         tg.expand();
 
-        // Инициализация профиля
+        // ===== ИНИЦИАЛИЗАЦИЯ ДАННЫХ =====
+        let state = {
+            balance: 250,
+            nickname: localStorage.getItem('nc_vpn_nickname') || 'User_' + Math.floor(Math.random() * 9000 + 1000),
+            totalDeposited: 300, // Для теста колеса (должно быть 0)
+            lastSpin: 0,
+            canRespin: false
+        };
+
+        // Приветствие при входе
         if (tg.initDataUnsafe?.user) {
-            const user = tg.initDataUnsafe.user;
-            document.getElementById('user-name').textContent = user.first_name + (user.last_name ? ' ' + user.last_name : '');
-            document.getElementById('user-avatar').textContent = user.first_name.charAt(0).toUpperCase();
+            const tgUser = tg.initDataUnsafe.user;
+            document.getElementById('user-tg-name').textContent = tgUser.first_name;
+            if (tgUser.photo_url) {
+                document.getElementById('user-avatar').style.backgroundImage = `url(${tgUser.photo_url})`;
+                document.getElementById('user-avatar').style.backgroundSize = 'cover';
+                document.getElementById('user-avatar').textContent = '';
+            }
+            
+            // Приветствие от бота
+            setTimeout(() => {
+                tg.showAlert(`Привет, ${tgUser.first_name}! Добро пожаловать в NC VPN.`);
+            }, 500);
         }
 
-        // Твои тарифы
+        updateUI();
+
+        // ===== ЛОГИКА МЕНЮ =====
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        function switchTab(tab) {
+            // Скрыть все
+            document.querySelectorAll('.main-content > div').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+
+            // Показать выбранный
+            document.getElementById('view-' + tab).style.display = 'block';
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            // Обновить заголовок
+            const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо Фортуны', tariffs: 'Тарифы' };
+            document.getElementById('header-title').textContent = titles[tab];
+
+            toggleMenu();
+        }
+
+        // ===== ЛОГИКА ПРОФИЛЯ =====
+        function changeNickname() {
+            // В WebApp нет нативного prompt, используем хитрость
+            const newNick = window.prompt("Введите новый никнейм:", state.nickname);
+            if (newNick && newNick.trim() !== '') {
+                state.nickname = newNick.trim();
+                localStorage.setItem('nc_vpn_nickname', state.nickname);
+                updateUI();
+            }
+        }
+
+        // ===== ЛОГИКА ТАРИФОВ =====
         const plans = [
             { devices: 1, priceDay: 6, priceMonth: 186, promo: false },
             { devices: 2, priceDay: 7, priceMonth: 217, promo: false },
@@ -198,16 +356,18 @@
             { devices: 4, priceDay: 8, priceMonth: 248, promo: true, promoText: "Акция" },
             { devices: 5, priceDay: 9, priceMonth: 279, promo: false }
         ];
+        let selectedPlan = plans[0];
 
-        let selectedPlan = plans[0]; // По умолчанию 1 устройство
-
-        // Рендер тарифов
         const container = document.getElementById('plans-container');
         plans.forEach((plan, index) => {
             const div = document.createElement('div');
             div.className = `plan-btn ${index === 0 ? 'active' : ''}`;
             div.id = `plan-${plan.devices}`;
-            div.onclick = () => selectPlan(plan, index);
+            div.onclick = () => {
+                selectedPlan = plan;
+                document.querySelectorAll('.plan-btn').forEach(el => el.classList.remove('active'));
+                div.classList.add('active');
+            };
             
             div.innerHTML = `
                 ${plan.promo ? `<div class="promo-badge">${plan.promoText}</div>` : ''}
@@ -218,45 +378,105 @@
             container.appendChild(div);
         });
 
-        function selectPlan(plan, index) {
-            selectedPlan = plan;
-            document.querySelectorAll('.plan-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(`plan-${plan.devices}`).classList.add('active');
-        }
-
-        async function createVpn() {
-            const btn = document.getElementById('connect-btn');
-            const resultBox = document.getElementById('result-box');
+        async function buyVpn() {
+            const tgUserId = tg.initDataUnsafe?.user?.id || 123456789;
             
-            btn.disabled = true;
-            btn.textContent = 'Обработка...';
-            resultBox.style.display = 'none';
-
-            const userId = tg.initDataUnsafe?.user?.id || 123456789;
-
             try {
                 const response = await fetch('/api/create-vpn', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        telegram_id: userId,
-                        devices: selectedPlan.devices 
-                    })
+                    body: JSON.stringify({ telegram_id: tgUserId, devices: selectedPlan.devices })
                 });
                 const data = await response.json();
 
                 if (data.ok) {
-                    resultBox.style.display = 'block';
-                    resultBox.innerHTML = `✅ Оплачено (${selectedPlan.priceDay}₽/день)<br>Тариф: ${selectedPlan.devices} устр.<br><br>Ваш ключ:<br>${data.subscription_url}`;
+                    document.getElementById('modal-key').textContent = data.subscription_url;
+                    document.getElementById('key-modal').classList.add('open');
                 } else {
                     tg.showAlert('Ошибка: ' + data.error);
                 }
             } catch (e) {
                 tg.showAlert('Ошибка сети: ' + e.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Оплатить и подключить';
             }
+        }
+
+        function copyKey() {
+            const key = document.getElementById('modal-key').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                tg.showAlert('Ключ скопирован!');
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('key-modal').classList.remove('open');
+        }
+
+        // ===== ЛОГИКА КОЛЕСА =====
+        let currentRotation = 0;
+        function spinWheel() {
+            if (state.totalDeposited < 300) {
+                return tg.showAlert('Колесо доступно после пополнения на 300 ₽ (накопительно).');
+            }
+
+            const now = Date.now();
+            if (now - state.lastSpin < 168 * 60 * 60 * 1000 && !state.canRespin) {
+                return tg.showAlert('КД! Крутить можно раз в 7 дней.');
+            }
+
+            const btn = document.getElementById('spin-btn');
+            btn.disabled = true;
+            btn.textContent = 'Крутится...';
+
+            // Визуальное вращение (просто для красоты, приз выпадает рандомно)
+            currentRotation += 3600 + Math.random() * 360;
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                // Шансы (14 respin, 4*10, 6*6, 2*50, 1*186, 3 Lose) = 30
+                const rand = Math.random() * 30;
+                let prize = '';
+                
+                if (rand < 14) {
+                    prize = 'Перекрути! (Респин)';
+                    state.canRespin = true;
+                } else if (rand < 18) {
+                    prize = 'Вы выиграли 10 Rub!';
+                    state.balance += 10;
+                } else if (rand < 24) {
+                    prize = 'Вы выиграли 6 Rub!';
+                    state.balance += 6;
+                } else if (rand < 26) {
+                    prize = 'Вы выиграли 50 RUB!';
+                    state.balance += 50;
+                } else if (rand < 27) {
+                    prize = '🏆 БЕСПЛАТНЫЙ МЕСЯЦ (186 Rub)!';
+                    state.balance += 186;
+                } else {
+                    prize = 'Lose. Приходите через 7 дней.';
+                    state.canRespin = false;
+                }
+
+                if (prize !== 'Перекрути! (Респин)') {
+                    state.lastSpin = now; // Запускаем кд
+                }
+
+                tg.showAlert('🎰 ' + prize);
+                btn.disabled = false;
+                btn.textContent = 'Крутить';
+                updateUI();
+
+            }, 3000); // Ждем 3 секунды пока крутится
+        }
+
+        // ===== ОБНОВЛЕНИЕ UI =====
+        function updateUI() {
+            document.getElementById('user-nickname').textContent = state.nickname;
+            
+            // Обновляем балансы (находим все места с балансом)
+            document.querySelectorAll('.balance-value').forEach(el => {
+                el.textContent = state.balance + ' ₽';
+            });
         }
     </script>
 </body>
