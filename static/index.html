@@ -12,142 +12,97 @@
             --text: #ffffff;
             --text-muted: #8e8e93;
             --accent: #007aff;
-            --accent-hover: #0056b3;
             --success: #34c759;
             --promo: #ff9500;
-            --danger: #ff3b30;
             --border: #2c2c2e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            overflow-x: hidden;
+        body { background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+
+        /* ===== ПРИВЕТСТВЕННЫЙ ЭКРАН ===== */
+        #welcome-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #111 0%, #1a1a2e 100%);
+            z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; text-align: center; transition: opacity 0.5s;
+        }
+        #welcome-screen h1 {
+            font-size: 40px; font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(90deg, #007aff, #00c6ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        #welcome-screen p { color: var(--text-muted); margin-bottom: 40px; font-size: 16px; }
+        .btn-continue {
+            background: var(--accent); color: white; border: none; padding: 18px 40px;
+            border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
         }
 
         /* ===== БОКОВОЕ МЕНЮ ===== */
-        .sidebar {
-            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
-            background: var(--card-bg); z-index: 1000; transition: 0.3s;
-            padding: 20px; border-right: 1px solid var(--border);
-        }
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: var(--card-bg); z-index: 1000; transition: 0.3s; padding: 20px; border-right: 1px solid var(--border); }
         .sidebar.open { left: 0; }
-        .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 999; display: none; opacity: 0; transition: 0.3s;
-        }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; display: none; opacity: 0; transition: 0.3s; }
         .overlay.open { display: block; opacity: 1; }
-        
-        .menu-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 15px; border-radius: 10px; margin-bottom: 5px;
-            cursor: pointer; font-weight: 600; color: var(--text);
-        }
+        .menu-item { display: flex; align-items: center; gap: 10px; padding: 15px; border-radius: 10px; margin-bottom: 5px; cursor: pointer; font-weight: 600; color: var(--text); }
         .menu-item:hover { background: rgba(255,255,255,0.05); }
         .menu-item.active { background: var(--accent); color: white; }
 
         /* ===== ШАПКА ===== */
-        .header {
-            display: flex; align-items: center; padding: 15px;
-            background: var(--bg); position: sticky; top: 0; z-index: 100;
-        }
+        .header { display: flex; align-items: center; padding: 15px; background: var(--bg); position: sticky; top: 0; z-index: 100; }
         .burger { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; }
         .header-title { font-size: 20px; font-weight: bold; flex: 1; text-align: center; padding-right: 30px;}
+        .back-btn { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; display: none; }
 
         /* ===== КОНТЕНТ ===== */
         .main-content { padding: 15px; padding-bottom: 80px; flex: 1; }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 15px; }
         
-        .card {
-            background: var(--card-bg); border-radius: 16px;
-            padding: 20px; border: 1px solid var(--border); margin-bottom: 15px;
-        }
-
-        /* Профиль и Баланс */
-        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .avatar {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: linear-gradient(135deg, #007aff, #00c6ff);
-            display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold;
-        }
-        .profile-name { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px;}
-        .edit-icon { cursor: pointer; font-size: 14px; color: var(--accent); }
-
-        .balance-box { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px; margin-top: 15px; }
         .balance-value { font-size: 24px; font-weight: bold; }
-        .btn { background: var(--accent); color: white; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center;}
         .btn:active { transform: scale(0.95); }
+        .btn-grey { background: var(--border); color: var(--text); }
 
-        /* Тарифы (Главная) */
+        /* Тарифы */
         .plans-container { display: flex; gap: 10px; overflow-x: auto; padding-top: 15px; padding-bottom: 10px; scrollbar-width: none; }
         .plans-container::-webkit-scrollbar { display: none; }
-        .plan-btn {
-            flex: 0 0 110px; background: var(--bg); border: 2px solid var(--border);
-            border-radius: 14px; padding: 20px 10px; text-align: center;
-            position: relative; cursor: pointer; transition: 0.2s;
-        }
+        .plan-btn { flex: 0 0 110px; background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 20px 10px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; }
         .plan-btn.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.1); }
-        .promo-badge {
-            position: absolute; top: -10px; right: -5px;
-            background: var(--promo); color: white; font-size: 10px; font-weight: bold;
-            padding: 3px 8px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
+        .promo-badge { position: absolute; top: -10px; right: -5px; background: var(--promo); color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 8px; }
         .plan-devices { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-        .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+        .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; }
         .plan-price-month { font-size: 11px; color: var(--text-muted); }
 
-        /* Колесо фортуны */
+        /* Колесо */
         .wheel-container { text-align: center; position: relative; margin: 20px 0; }
-        .wheel {
-            width: 200px; height: 200px; border-radius: 50%; margin: 0 auto;
-            background: conic-gradient(#ff3b30 0deg 12deg, #1c1c1e 12deg 360deg);
-            border: 4px solid var(--border); position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8); transition: transform 3s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-        .wheel-center {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 40px; height: 40px; background: var(--accent); border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; font-weight: bold;
-        }
-        .wheel-pointer {
-            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-            width: 0; height: 0; border-left: 10px solid transparent;
-            border-right: 10px solid transparent; border-top: 20px solid white; z-index: 10;
-        }
-        .prizes-list { font-size: 12px; color: var(--text-muted); margin-top: 15px; text-align: left; line-height: 1.6; }
-        
-        /* Модальное окно (Ключ) */
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px;
-        }
-        .modal.open { display: flex; }
-        .modal-content {
-            background: var(--card-bg); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; text-align: center;
-        }
-        .key-box {
-            background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all;
-            margin: 15px 0; border: 1px solid var(--border); color: var(--success); text-align: left;
-        }
+        .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+        canvas { transition: transform 4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .prizes-list { font-size: 13px; color: var(--text-muted); margin-top: 15px; text-align: left; line-height: 1.8; background: var(--bg); padding: 15px; border-radius: 10px;}
+
+        /* Экран подключения */
+        .client-card { display: flex; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .client-icon { width: 40px; height: 40px; background: var(--border); border-radius: 10px; margin-right: 15px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px; }
+        .client-info h4 { margin-bottom: 3px; font-size: 15px; }
+        .client-info p { color: var(--text-muted); font-size: 12px; }
+        .key-box { background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin: 10px 0; border: 1px solid var(--border); color: var(--success); text-align: left; }
 
         /* Футер */
-        .footer {
-            padding: 20px; text-align: center; font-size: 13px; color: var(--text-muted);
-            border-top: 1px solid var(--border); margin-top: auto;
-        }
+        .footer { padding: 20px; text-align: center; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: auto; }
         .footer a { color: var(--accent); text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- Оверлей (Затемнение при открытом меню) -->
-    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <!-- Приветственный экран -->
+    <div id="welcome-screen">
+        <h1>NEW CHAPTER</h1>
+        <p>Добро пожаловать в NC VPN</p>
+        <button class="btn-continue" onclick="closeWelcome()">Продолжить</button>
+    </div>
 
-    <!-- Боковое меню -->
+    <!-- Меню и Оверлей -->
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     <div class="sidebar" id="sidebar">
         <h2 style="margin-bottom: 20px; text-align: center;">NC VPN</h2>
         <div class="menu-item active" id="tab-home" onclick="switchTab('home')">🏠 Главная</div>
@@ -158,124 +113,152 @@
 
     <!-- Шапка -->
     <div class="header">
-        <div class="burger" onclick="toggleMenu()">☰</div>
+        <div class="burger" id="burger-btn" onclick="toggleMenu()">☰</div>
+        <div class="back-btn" id="back-btn" onclick="switchTab('home')">←</div>
         <div class="header-title" id="header-title">Главная</div>
     </div>
 
-    <!-- Основной контент -->
-    <div class="main-content" id="main-content">
+    <!-- Контент -->
+    <div class="main-content">
         
-        <!-- ВКЛАДКА: ГЛАВНАЯ -->
+        <!-- ГЛАВНАЯ -->
         <div id="view-home">
-            <div class="card">
-                <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Ваш баланс</div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Ваш баланс</div>
                     <div class="balance-value">250 ₽</div>
-                    <button class="btn" onclick="tg.showAlert('Пополнение баланса появится позже!')">+ Пополнить</button>
+                </div>
+                <button class="btn" onclick="tg.showAlert('Пополнение появится позже!')">+ Пополнить</button>
+            </div>
+
+            <div class="card" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
+                <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Подписка истекает через</div>
+                <div style="font-size: 24px; font-weight: bold; color: var(--success);" id="days-left">31 день</div>
+            </div>
+
+            <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px; margin-top: 20px;">Выберите тариф:</div>
+            <div class="plans-container" id="plans-container"></div>
+            
+            <button class="btn" style="width: 100%; margin-top: 15px; font-size: 16px; padding: 15px;" onclick="switchTab('connect')">Подключить VPN</button>
+        </div>
+
+        <!-- ЭКРАН ПОДКЛЮЧЕНИЯ -->
+        <div id="view-connect" style="display: none;">
+            <h2 style="text-align: center; margin-bottom: 20px;">Настройка VPN</h2>
+            
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">1. Скопируйте ссылку подписки</div>
+                <div class="key-box" id="sub-link">vless://dummy-link-for-now@127.0.0.1:443</div>
+                <button class="btn" style="width: 100%;" onclick="copyLink()">Скопировать ссылку</button>
+            </div>
+
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">2. Установите клиент</div>
+                
+                <div class="client-card">
+                    <div class="client-icon" style="color: #007aff;">H</div>
+                    <div class="client-info">
+                        <h4>Happ</h4>
+                        <p>Windows, iOS, Android</p>
+                    </div>
+                </div>
+
+                <div class="client-card">
+                    <div class="client-icon" style="color: #34c759;">V</div>
+                    <div class="client-info">
+                        <h4>v2RayTun</h4>
+                        <p>iOS, Android</p>
+                    </div>
+                </div>
+
+                <div class="client-card">
+                    <div class="client-icon" style="color: #ff9500;">H</div>
+                    <div class="client-info">
+                        <h4>Hiddify</h4>
+                        <p>Windows, macOS, Linux, Android, iOS</p>
+                    </div>
                 </div>
             </div>
 
-            <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px; margin-top: 20px;">Выберите тариф для покупки:</div>
-            <div class="plans-container" id="plans-container">
-                <!-- Рендерится через JS -->
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">3. Вставьте ссылку</div>
+                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+                    Откройте выбранное приложение, найдите кнопку «+» или «Добавить подписку по ссылке» (Import / Add subscription) и вставьте скопированную ссылку — сервер подключится автоматически.
+                </p>
             </div>
-            <button class="btn" style="width: 100%; margin-top: 15px;" onclick="buyVpn()">Купить выбранный тариф</button>
         </div>
 
-        <!-- ВКЛАДКА: ПРОФИЛЬ -->
+        <!-- ПРОФИЛЬ -->
         <div id="view-profile" style="display: none;">
             <div class="card">
-                <div class="profile-header">
-                    <div class="avatar" id="user-avatar">U</div>
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                    <div class="avatar" id="user-avatar" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #007aff, #00c6ff); display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold;">U</div>
                     <div>
-                        <div class="profile-name">
+                        <div style="font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px;">
                             <span id="user-nickname">User_1234</span>
-                            <span class="edit-icon" onclick="changeNickname()">✏️ Изменить</span>
+                            <span style="cursor: pointer; font-size: 14px; color: var(--accent);" onclick="changeNickname()">✏️</span>
                         </div>
                         <div style="color: var(--text-muted); font-size: 13px;" id="user-tg-name">Telegram User</div>
                     </div>
                 </div>
                 
-                <div class="balance-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px;">
                     <div>
                         <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Баланс</div>
                         <div class="balance-value">250 ₽</div>
                     </div>
-                    <button class="btn" onclick="tg.showAlert('Пополнение баланса появится позже!')">Пополнить</button>
+                    <button class="btn" onclick="tg.showAlert('Пополнение появится позже!')">Пополнить</button>
                 </div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА: КОЛЕСО ФОРТУНЫ -->
+        <!-- КОЛЕСО -->
         <div id="view-wheel" style="display: none;">
             <div class="card">
-                <h3 style="text-align: center; margin-bottom: 10px;">Колесо Фортуны</h3>
-                <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                    Доступно после пополнения на 300 ₽. 1 вращение в 7 дней.
-                </p>
+                <h3 style="text-align: center;">Колесо Фортуны</h3>
+                <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">1 вращение в 7 дней</p>
 
                 <div class="wheel-container">
-                    <div class="wheel-pointer"></div>
-                    <div class="wheel" id="wheel">
-                        <div class="wheel-center">Spin</div>
-                    </div>
+                    <div class="wheel-pointer">▼</div>
+                    <canvas id="wheelCanvas" width="300" height="300"></canvas>
                 </div>
 
-                <button class="btn" id="spin-btn" style="width: 100%;" onclick="spinWheel()">Крутить (Бесплатно)</button>
+                <button class="btn" id="spin-btn" style="width: 100%; margin-top: 10px;" onclick="spinWheel()">Крутить</button>
 
                 <div class="prizes-list">
-                    <b>Призы на колесе:</b><br>
-                    🎁 Перекрути (Респин) — 14 слотов<br>
-                    💰 10 Rub — 4 слота<br>
-                    💰 6 Rub — 6 слотов<br>
-                    💰 50 RUB — 2 слота<br>
-                    🏆 Бесплатный месяц — 1 слот<br>
-                    ❌ Lose (КД 7 дней) — 3 слота
+                    <div style="display: flex; justify-content: space-between;"><span><span style="color:#555;">■</span> Lose</span> <b>14 шт.</b></div>
+                    <div style="display: flex; justify-content: space-between;"><span><span style="color:#007aff;">■</span> 10 Rub</span> <b>4 шт.</b></div>
+                    <div style="display: flex; justify-content: space-between;"><span><span style="color:#34c759;">■</span> 6 Rub</span> <b>6 шт.</b></div>
+                    <div style="display: flex; justify-content: space-between;"><span><span style="color:#ff2d55;">■</span> 50 Rub</span> <b>2 шт.</b></div>
+                    <div style="display: flex; justify-content: space-between;"><span><span style="color:#ff3b30;">■</span> Безлимит (186 Rub)</span> <b>1 шт.</b></div>
                 </div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА: ТАРИФЫ -->
+        <!-- ТАРИФЫ -->
         <div id="view-tariffs" style="display: none;">
             <h3 style="margin-bottom: 15px;">Все тарифы</h3>
             <div class="card" style="padding: 15px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>1 устройство</span>
-                    <span><b>186 ₽ / мес</b> (6 ₽/день)</span>
+                    <span>1 устройство</span><span><b>186 ₽ / мес</b> (6 ₽/день)</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>2 устройства</span>
-                    <span><b>217 ₽ / мес</b> (7 ₽/день)</span>
+                    <span>2 устройства</span><span><b>217 ₽ / мес</b> (7 ₽/день)</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>3 устройства</span>
-                    <span><b>248 ₽ / мес</b> (8 ₽/день)</span>
+                    <span>3 устройства</span><span><b>248 ₽ / мес</b> (8 ₽/день)</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>4 устройства (Акция)</span>
-                    <span><b>248 ₽ / мес</b> (8 ₽/день)</span>
+                    <span>4 устройства (Акция)</span><span><b>248 ₽ / мес</b> (8 ₽/день)</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span>5 устройств</span>
-                    <span><b>279 ₽ / мес</b> (9 ₽/день)</span>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>5 устройств</span><span><b>279 ₽ / мес</b> (9 ₽/день)</span>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- Модальное окно с ключом -->
-    <div class="modal" id="key-modal">
-        <div class="modal-content">
-            <h2 style="color: var(--success); margin-bottom: 10px;">✅ Оплачено!</h2>
-            <p style="font-size: 14px;">Ваш ключ для подключения:</p>
-            <div class="key-box" id="modal-key">vless://...</div>
-            <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="copyKey()">Скопировать</button>
-            <button class="btn" style="width: 100%; background: var(--border);" onclick="closeModal()">Закрыть</button>
-        </div>
-    </div>
-
-    <!-- Футер -->
     <div class="footer">
         Telegram канал NC - <a href="https://t.me/newchapterjob" target="_blank">@newchapterjob</a><br><br>
         Бот для заработка - <a href="https://t.me/ncjobbot" target="_blank">@ncjobbot</a>
@@ -286,69 +269,54 @@
         tg.ready();
         tg.expand();
 
-        // ===== ИНИЦИАЛИЗАЦИЯ ДАННЫХ =====
         let state = {
-            balance: 250,
+            balance: 186, // Для теста (чтобы показывало 31 день)
             nickname: localStorage.getItem('nc_vpn_nickname') || 'User_' + Math.floor(Math.random() * 9000 + 1000),
-            totalDeposited: 300, // Для теста колеса (должно быть 0)
             lastSpin: 0,
-            canRespin: false
         };
 
-        // Приветствие при входе
-        if (tg.initDataUnsafe?.user) {
-            const tgUser = tg.initDataUnsafe.user;
-            document.getElementById('user-tg-name').textContent = tgUser.first_name;
-            if (tgUser.photo_url) {
-                document.getElementById('user-avatar').style.backgroundImage = `url(${tgUser.photo_url})`;
-                document.getElementById('user-avatar').style.backgroundSize = 'cover';
-                document.getElementById('user-avatar').textContent = '';
-            }
-            
-            // Приветствие от бота
+        // ===== ПРИВЕТСТВИЕ =====
+        function closeWelcome() {
+            document.getElementById('welcome-screen').style.opacity = '0';
             setTimeout(() => {
-                tg.showAlert(`Привет, ${tgUser.first_name}! Добро пожаловать в NC VPN.`);
+                document.getElementById('welcome-screen').style.display = 'none';
+                // Приветствие от бота (всплывающее окно)
+                if (tg.initDataUnsafe?.user) {
+                    tg.showAlert(`Привет, ${tg.initDataUnsafe.user.first_name}! Рады видеть тебя в NC VPN.`);
+                    document.getElementById('user-tg-name').textContent = tg.initDataUnsafe.user.first_name;
+                }
             }, 500);
         }
 
-        updateUI();
-
-        // ===== ЛОГИКА МЕНЮ =====
+        // ===== НАВИГАЦИЯ =====
         function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('open');
         }
 
         function switchTab(tab) {
-            // Скрыть все
             document.querySelectorAll('.main-content > div').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
 
-            // Показать выбранный
             document.getElementById('view-' + tab).style.display = 'block';
-            document.getElementById('tab-' + tab).classList.add('active');
+            if(document.getElementById('tab-' + tab)) document.getElementById('tab-' + tab).classList.add('active');
             
-            // Обновить заголовок
-            const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо Фортуны', tariffs: 'Тарифы' };
+            const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', connect: 'Подключение' };
             document.getElementById('header-title').textContent = titles[tab];
 
-            toggleMenu();
-        }
-
-        // ===== ЛОГИКА ПРОФИЛЯ =====
-        function changeNickname() {
-            // В WebApp нет нативного prompt, используем хитрость
-            const newNick = window.prompt("Введите новый никнейм:", state.nickname);
-            if (newNick && newNick.trim() !== '') {
-                state.nickname = newNick.trim();
-                localStorage.setItem('nc_vpn_nickname', state.nickname);
-                updateUI();
+            // Управление кнопками в шапке
+            if (tab === 'connect') {
+                document.getElementById('burger-btn').style.display = 'none';
+                document.getElementById('back-btn').style.display = 'block';
+            } else {
+                document.getElementById('burger-btn').style.display = 'block';
+                document.getElementById('back-btn').style.display = 'none';
             }
+
+            if (document.getElementById('sidebar').classList.contains('open')) toggleMenu();
         }
 
-        // ===== ЛОГИКА ТАРИФОВ =====
+        // ===== ТАРИФЫ И ДНИ =====
         const plans = [
             { devices: 1, priceDay: 6, priceMonth: 186, promo: false },
             { devices: 2, priceDay: 7, priceMonth: 217, promo: false },
@@ -367,6 +335,7 @@
                 selectedPlan = plan;
                 document.querySelectorAll('.plan-btn').forEach(el => el.classList.remove('active'));
                 div.classList.add('active');
+                updateDaysLeft(); // Пересчитываем дни при смене тарифа
             };
             
             div.innerHTML = `
@@ -378,106 +347,136 @@
             container.appendChild(div);
         });
 
-        async function buyVpn() {
-            const tgUserId = tg.initDataUnsafe?.user?.id || 123456789;
-            
-            try {
-                const response = await fetch('/api/create-vpn', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegram_id: tgUserId, devices: selectedPlan.devices })
-                });
-                const data = await response.json();
+        function updateDaysLeft() {
+            const days = Math.floor(state.balance / selectedPlan.priceDay);
+            document.getElementById('days-left').textContent = days + ' дн.';
+        }
 
-                if (data.ok) {
-                    document.getElementById('modal-key').textContent = data.subscription_url;
-                    document.getElementById('key-modal').classList.add('open');
-                } else {
-                    tg.showAlert('Ошибка: ' + data.error);
-                }
-            } catch (e) {
-                tg.showAlert('Ошибка сети: ' + e.message);
+        // ===== ПРОФИЛЬ =====
+        function changeNickname() {
+            const newNick = window.prompt("Введите новый никнейм:", state.nickname);
+            if (newNick && newNick.trim() !== '') {
+                state.nickname = newNick.trim();
+                localStorage.setItem('nc_vpn_nickname', state.nickname);
+                document.getElementById('user-nickname').textContent = state.nickname;
             }
         }
 
-        function copyKey() {
-            const key = document.getElementById('modal-key').textContent;
+        // ===== ЭКРАН ПОДКЛЮЧЕНИЯ =====
+        function copyLink() {
+            const key = document.getElementById('sub-link').textContent;
             navigator.clipboard.writeText(key).then(() => {
-                tg.showAlert('Ключ скопирован!');
+                tg.showAlert('Ссылка скопирована!');
             });
         }
 
-        function closeModal() {
-            document.getElementById('key-modal').classList.remove('open');
-        }
+        // ===== КОЛЕСО ФОРТУНЫ (CANVAS) =====
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 140;
 
-        // ===== ЛОГИКА КОЛЕСА =====
+        // Генерируем 27 слотов
+        let wheelItems = [];
+        for (let i = 0; i < 14; i++) wheelItems.push({ label: '0', color: '#555555' }); // Lose
+        for (let i = 0; i < 4; i++) wheelItems.push({ label: '10₽', color: '#007aff' }); // 10 Rub
+        for (let i = 0; i < 6; i++) wheelItems.push({ label: '6₽', color: '#34c759' }); // 6 Rub
+        for (let i = 0; i < 2; i++) wheelItems.push({ label: '50₽', color: '#ff2d55' }); // 50 Rub
+        wheelItems.push({ label: '186₽', color: '#ff3b30' }); // Free Month (1 slot)
+
+        // Перемешиваем
+        wheelItems.sort(() => Math.random() - 0.5);
+
+        function drawWheel() {
+            const anglePerItem = (Math.PI * 2) / wheelItems.length;
+            
+            for (let i = 0; i < wheelItems.length; i++) {
+                const startAngle = i * anglePerItem;
+                const endAngle = startAngle + anglePerItem;
+                
+                // Рисуем сектор
+                ctx.beginPath();
+                ctx.fillStyle = wheelItems[i].color;
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.fill();
+                ctx.strokeStyle = '#1c1c1e';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Рисуем текст
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + anglePerItem / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 13px sans-serif';
+                ctx.fillText(wheelItems[i].label, radius - 10, 5);
+                ctx.restore();
+            }
+            
+            // Центральный круг
+            ctx.beginPath();
+            ctx.fillStyle = '#1c1c1e';
+            ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'var(--accent)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+        drawWheel();
+
         let currentRotation = 0;
         function spinWheel() {
-            if (state.totalDeposited < 300) {
-                return tg.showAlert('Колесо доступно после пополнения на 300 ₽ (накопительно).');
-            }
-
             const now = Date.now();
-            if (now - state.lastSpin < 168 * 60 * 60 * 1000 && !state.canRespin) {
-                return tg.showAlert('КД! Крутить можно раз в 7 дней.');
+            const CD_7_DAYS = 7 * 24 * 60 * 60 * 1000;
+            
+            if (state.lastSpin > 0 && now - state.lastSpin < CD_7_DAYS) {
+                return tg.showAlert('Кулдаун! Крутить можно раз в 7 дней.');
             }
 
             const btn = document.getElementById('spin-btn');
             btn.disabled = true;
             btn.textContent = 'Крутится...';
 
-            // Визуальное вращение (просто для красоты, приз выпадает рандомно)
-            currentRotation += 3600 + Math.random() * 360;
-            const wheel = document.getElementById('wheel');
-            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            // Выбираем случайный выигрыш
+            const winIndex = Math.floor(Math.random() * wheelItems.length);
+            const prize = wheelItems[winIndex];
+
+            // Вычисляем угол для остановки (стрелка смотрит вверх, поэтому вычитаем Math.PI/2)
+            const anglePerItem = 360 / wheelItems.length;
+            // Чтобы элемент оказался под стрелкой, нужно повернуть колесо так, чтобы его центр (winIndex * anglePerItem + anglePerItem/2) оказался на -90 градусах
+            const targetAngle = 360 - (winIndex * anglePerItem + anglePerItem / 2);
+            
+            // Добавляем обороты для красоты
+            currentRotation += 3600 + targetAngle - (currentRotation % 360);
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
 
             setTimeout(() => {
-                // Шансы (14 respin, 4*10, 6*6, 2*50, 1*186, 3 Lose) = 30
-                const rand = Math.random() * 30;
-                let prize = '';
-                
-                if (rand < 14) {
-                    prize = 'Перекрути! (Респин)';
-                    state.canRespin = true;
-                } else if (rand < 18) {
-                    prize = 'Вы выиграли 10 Rub!';
-                    state.balance += 10;
-                } else if (rand < 24) {
-                    prize = 'Вы выиграли 6 Rub!';
-                    state.balance += 6;
-                } else if (rand < 26) {
-                    prize = 'Вы выиграли 50 RUB!';
-                    state.balance += 50;
-                } else if (rand < 27) {
-                    prize = '🏆 БЕСПЛАТНЫЙ МЕСЯЦ (186 Rub)!';
+                let msg = '';
+                if (prize.label === '0') {
+                    msg = 'Lose! В следующий раз повезет.';
+                } else if (prize.label === '186₽') {
+                    msg = '🏆 БЕЗЛИМИТ НА МЕСЯЦ! (186₽ на баланс)';
                     state.balance += 186;
                 } else {
-                    prize = 'Lose. Приходите через 7 дней.';
-                    state.canRespin = false;
+                    msg = `Вы выиграли ${prize.label}!`;
+                    state.balance += parseInt(prize.label);
                 }
 
-                if (prize !== 'Перекрути! (Респин)') {
-                    state.lastSpin = now; // Запускаем кд
-                }
-
-                tg.showAlert('🎰 ' + prize);
+                state.lastSpin = now; // Включаем кулдаун
+                tg.showAlert(msg);
+                
                 btn.disabled = false;
                 btn.textContent = 'Крутить';
-                updateUI();
-
-            }, 3000); // Ждем 3 секунды пока крутится
+                updateDaysLeft(); // Обновляем дни на главной
+            }, 4000);
         }
 
-        // ===== ОБНОВЛЕНИЕ UI =====
-        function updateUI() {
-            document.getElementById('user-nickname').textContent = state.nickname;
-            
-            // Обновляем балансы (находим все места с балансом)
-            document.querySelectorAll('.balance-value').forEach(el => {
-                el.textContent = state.balance + ' ₽';
-            });
-        }
+        // Инициализация
+        updateDaysLeft();
+        document.getElementById('user-nickname').textContent = state.nickname;
     </script>
 </body>
 </html>
