@@ -20,12 +20,10 @@
         }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* Экраны регистрации и приветствия */
         #welcome-screen, #register-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; transition: opacity 0.5s; }
         .logo-text { font-size: 40px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(90deg, #007aff, #00c6ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
         .btn-main { background: var(--accent); color: white; border: none; padding: 18px 40px; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; }
 
-        /* Меню */
         .sidebar { position: fixed; top: 0; left: -320px; width: 320px; height: 100%; background: rgba(28, 28, 30, 0.98); backdrop-filter: blur(10px); z-index: 1000; transition: 0.3s; padding: 20px; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
         .sidebar.open { left: 0; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; display: none; opacity: 0; transition: 0.3s; }
@@ -35,38 +33,37 @@
         .menu-item.active { background: var(--accent); color: white; }
         .admin-section-title { font-size: 12px; color: var(--promo); margin: 15px 0 5px 15px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
 
-        /* Шапка */
         .header { display: flex; align-items: center; padding: 15px; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
         .burger { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; }
         .header-title { font-size: 20px; font-weight: bold; flex: 1; text-align: center; padding-right: 30px;}
         .back-btn { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; display: none; }
 
-        /* Контент */
         .main-content { padding: 15px; padding-bottom: 80px; flex: 1; }
         .card { background: var(--card-bg); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 15px; }
         .balance-value { font-size: 24px; font-weight: bold; }
         .btn { background: var(--accent); color: white; border: none; padding: 12px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center; width: 100%;}
         .btn:active { transform: scale(0.95); }
-        .btn:disabled { background: var(--border); color: var(--text-muted); }
+        .btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
         .btn-danger { background: var(--danger); }
         .btn-success { background: var(--success); }
         
-        /* Тарифы */
-        .plans-container { display: flex; gap: 10px; overflow-x: auto; padding: 15px 5px; scrollbar-width: none; scroll-behavior: smooth; }
+        /* Тарифы со стрелками */
+        .plans-wrapper { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .scroll-arrow { font-size: 18px; color: var(--text-muted); padding: 5px; cursor: pointer; user-select: none; transition: 0.2s; }
+        .scroll-arrow:active { color: var(--accent); transform: scale(1.2); }
+        .plans-container { display: flex; gap: 10px; overflow-x: auto; padding: 15px 5px; scrollbar-width: none; flex: 1; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
         .plans-container::-webkit-scrollbar { display: none; }
-        .plan-btn { flex: 0 0 100px; background: rgba(0,0,0,0.5); border: 2px solid var(--border); border-radius: 14px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .plan-btn { flex: 0 0 110px; background: rgba(0,0,0,0.5); border: 2px solid var(--border); border-radius: 14px; padding: 15px 5px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; }
         .plan-btn.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.2); }
         .promo-badge { position: absolute; top: -10px; right: -5px; background: var(--promo); color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 8px; }
         .plan-devices { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
         .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; }
         
-        /* Колесо */
         .wheel-container { position: relative; text-align: center; margin: 20px 0; display: flex; justify-content: center; }
         .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
         canvas { transition: transform 4s cubic-bezier(0.25, 1, 0.5, 1); }
         .cooldown-overlay { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: rgba(0,0,0,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 20; border: 2px solid var(--border); }
         
-        /* Формы и списки */
         input, textarea { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
         .user-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
         .user-row input { width: 80px; margin: 0 10px; padding: 5px; text-align: center; }
@@ -78,7 +75,6 @@
 </head>
 <body>
 
-    <!-- ЭКРАН РЕГИСТРАЦИИ -->
     <div id="register-screen" style="display: none;">
         <h1 class="logo-text">Регистрация</h1>
         <p style="color: var(--text-muted); margin-bottom: 20px;">Придумайте ваш никнейм (имя), чтобы продолжить</p>
@@ -86,7 +82,6 @@
         <button class="btn-main" onclick="registerUser()">Создать профиль</button>
     </div>
 
-    <!-- ПРИВЕТСТВИЕ -->
     <div id="welcome-screen">
         <h1 class="logo-text">NEW CHAPTER</h1>
         <p style="color: var(--text-muted); margin-bottom: 20px;">Добро пожаловать в NC VPN</p>
@@ -95,7 +90,6 @@
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     
-    <!-- МЕНЮ -->
     <div class="sidebar" id="sidebar">
         <h2 style="margin-bottom: 20px; text-align: center;">NC VPN</h2>
         <div class="menu-item active" id="tab-home" onclick="switchTab('home')">🏠 Главная</div>
@@ -116,14 +110,12 @@
         </div>
     </div>
 
-    <!-- ШАПКА -->
     <div class="header">
         <div class="burger" id="burger-btn" onclick="toggleMenu()">☰</div>
         <div class="back-btn" id="back-btn" onclick="switchTab('home')">←</div>
         <div class="header-title" id="header-title">Главная</div>
     </div>
 
-    <!-- КОНТЕНТ -->
     <div class="main-content">
         
         <!-- ГЛАВНАЯ -->
@@ -136,14 +128,12 @@
                 <button class="btn" style="width: auto;" onclick="topUpBalance()">+ Пополнить</button>
             </div>
 
-            <!-- Блок: Фиксированный тариф (если куплен) -->
             <div class="card" id="active-fixed-card" style="display: none; border-color: var(--success); background: rgba(52, 199, 89, 0.1);">
                 <div style="font-size: 14px; color: var(--success); font-weight: bold; margin-bottom: 5px;">У вас активен пакетный тариф!</div>
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;" id="fixed-name">3 Месяца на 4 устройства</div>
                 <div style="font-size: 13px; color: var(--text-muted);">Осталось дней: <span id="fixed-days" style="color:var(--text); font-weight:bold;">0</span></div>
             </div>
 
-            <!-- Блок: Ежедневный тариф -->
             <div id="daily-block">
                 <div class="card">
                     <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Ежедневная подписка истекает через</div>
@@ -151,8 +141,12 @@
                 </div>
 
                 <div style="font-size: 16px; font-weight: bold; margin-top: 20px;">Выберите ежедневный тариф:</div>
-                <div class="plans-container" id="user-plans-container"></div>
-                <button class="btn" style="margin-top: 15px; padding: 15px;" onclick="switchTab('connect')">Подключить VPN</button>
+                <div class="plans-wrapper">
+                    <div class="scroll-arrow" onclick="scrollPlans(-120)">❮</div>
+                    <div class="plans-container" id="user-plans-container"></div>
+                    <div class="scroll-arrow" onclick="scrollPlans(120)">❯</div>
+                </div>
+                <button class="btn" style="margin-top: 15px; padding: 15px;" id="connect-vpn-btn" onclick="connectVpn()">Подключить VPN</button>
             </div>
         </div>
 
@@ -160,8 +154,8 @@
         <div id="view-connect" style="display: none;">
             <h2 style="text-align: center; margin-bottom: 20px;">Настройка VPN</h2>
             <div class="card">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Ссылка для подключения</div>
-                <div style="background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin: 10px 0; border: 1px solid var(--border); color: var(--success);" id="sub-link">vless://dummy-link-for-now@127.0.0.1:443</div>
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Ваша ссылка подписки</div>
+                <div style="background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin: 10px 0; border: 1px solid var(--border); color: var(--success);" id="sub-link">Загрузка...</div>
                 <button class="btn" onclick="copyLink()">Скопировать</button>
             </div>
         </div>
@@ -201,10 +195,9 @@
             </div>
         </div>
 
-        <!-- ТАРИФЫ (Пользовательские) -->
+        <!-- ТАРИФЫ -->
         <div id="view-tariffs" style="display: none;">
             <h3 style="margin-bottom: 15px;">Фиксированные тарифы</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Покупка тарифа приостанавливает ежедневное списание на время его действия.</p>
             <div id="user-tariffs-list"></div>
         </div>
 
@@ -236,6 +229,7 @@
                 <input type="number" id="new-tariff-price" placeholder="Цена (например: 350)">
                 <input type="text" id="new-tariff-desc" placeholder="Описание (например: 3 Месяца на 4 устройства)">
                 <input type="number" id="new-tariff-days" placeholder="На сколько дней (например: 90)">
+                <input type="number" id="new-tariff-devices" placeholder="Кол-во устройств (например: 4)">
                 <button class="btn btn-success" onclick="addNewTariff()">Добавить</button>
             </div>
         </div>
@@ -268,7 +262,6 @@
         tg.ready();
         tg.expand();
 
-        // ===== БАЗА ДАННЫХ (Имитация) =====
         let appState = {
             isAdmin: false,
             isRegistered: localStorage.getItem('nc_vpn_registered') === 'true',
@@ -276,24 +269,21 @@
                 tg_id: tg.initDataUnsafe?.user?.id || 123456789,
                 tg_username: tg.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : '@no_username',
                 nickname: localStorage.getItem('nc_vpn_nickname') || '',
-                balance: 250, 
+                balance: Number(localStorage.getItem('nc_vpn_balance')) || 250, 
+                selectedDevices: 1,
+                selectedPriceDay: 6,
+                hasActiveKey: localStorage.getItem('nc_vpn_has_active_key') === 'true',
                 lastSpin: Number(localStorage.getItem('nc_vpn_lastSpin')) || 0,
-                wheelHistory: JSON.parse(localStorage.getItem('nc_vpn_wheel')) || [],
-                // Купленный фиксированный тариф (null если нет)
                 activeFixed: JSON.parse(localStorage.getItem('nc_vpn_active_fixed')) || null
             },
-            // Список для админа (добавим текущего юзера)
-            allUsers: [
+            allUsers: JSON.parse(localStorage.getItem('nc_vpn_all_users')) || [
                 { tg_id: 123456789, username: '@test_user', name: 'Test', balance: 250, blocked: false },
-                { tg_id: 987654321, username: '@vasyapupkin', name: 'Vasya', balance: 50, blocked: false },
-                { tg_id: 111222333, username: '@spamer_pro', name: 'Spam', balance: 0, blocked: true }
+                { tg_id: 987654321, username: '@vasyapupkin', name: 'Vasya', balance: 50, blocked: false }
             ],
-            // Фиксированные тарифы
             tariffs: [
-                { id: 1, price: 350, desc: '3 Месяца на 4 устройства', days: 90 },
-                { id: 2, price: 500, desc: '1 Год на 5 устройств', days: 365 }
+                { id: 1, price: 350, desc: '3 Месяца на 4 устройства', days: 90, devices: 4 },
+                { id: 2, price: 500, desc: '1 Год на 5 устройств', days: 365, devices: 5 }
             ],
-            // Ежедневные тарифы (для главной)
             dailyPlans: [
                 { devices: 1, priceDay: 6, priceMonth: 186 },
                 { devices: 2, priceDay: 7, priceMonth: 217 },
@@ -302,7 +292,6 @@
                 { devices: 5, priceDay: 9, priceMonth: 279 }
             ],
             wheelEnabled: true,
-            // Конструктор колеса
             wheelItems: [
                 { label: '186₽', color: '#ff3b30', value: 186 },
                 { label: 'Lose', color: '#555555', value: 0 },
@@ -319,7 +308,6 @@
             ]
         };
 
-        // ===== ЛОГИКА СТАРТА =====
         if (appState.isRegistered) {
             document.getElementById('register-screen').style.display = 'none';
             document.getElementById('welcome-screen').style.display = 'flex';
@@ -337,17 +325,23 @@
             localStorage.setItem('nc_vpn_registered', 'true');
             appState.isRegistered = true;
             
-            // Добавляем в базу (для админки)
-            appState.allUsers.push({
-                tg_id: appState.user.tg_id,
-                username: appState.user.tg_username,
-                name: name,
-                balance: appState.user.balance,
-                blocked: false
-            });
+            if (!appState.allUsers.find(u => u.tg_id === appState.user.tg_id)) {
+                appState.allUsers.push({
+                    tg_id: appState.user.tg_id,
+                    username: appState.user.tg_username,
+                    name: name,
+                    balance: appState.user.balance,
+                    blocked: false
+                });
+                saveAllUsers();
+            }
 
             document.getElementById('register-screen').style.display = 'none';
             document.getElementById('welcome-screen').style.display = 'flex';
+        }
+
+        function saveAllUsers() {
+            localStorage.setItem('nc_vpn_all_users', JSON.stringify(appState.allUsers));
         }
 
         function closeWelcome() {
@@ -397,14 +391,12 @@
             updateUI();
         }
 
-        // ===== АВТОРИЗАЦИЯ =====
         function handleAdminAuthClick() {
             if (appState.isAdmin) {
                 appState.isAdmin = false;
                 document.getElementById('admin-menu').style.display = 'none';
                 document.getElementById('admin-auth-btn').innerHTML = '⚙️ Войти в АдмПрофиль';
                 switchTab('home');
-                tg.showAlert('Вы вышли из админки.');
             } else {
                 switchTab('admin-login');
             }
@@ -424,16 +416,20 @@
             }
         }
 
-        // ===== UI =====
         function updateUI() {
             document.getElementById('home-balance').textContent = appState.user.balance + ' ₽';
             document.getElementById('user-nickname').textContent = appState.user.nickname;
             document.getElementById('user-tg-username').textContent = appState.user.tg_username;
 
-            // ЛОГИКА: Фиксированный или Ежедневный
+            // Синхронизация баланса текущего юзера с общей таблицей
+            const idx = appState.allUsers.findIndex(u => u.tg_id === appState.user.tg_id);
+            if (idx !== -1) {
+                appState.allUsers[idx].balance = appState.user.balance;
+                saveAllUsers();
+            }
+
             const now = Date.now();
             if (appState.user.activeFixed && appState.user.activeFixed.expires > now) {
-                // Есть фиксированный
                 document.getElementById('active-fixed-card').style.display = 'block';
                 document.getElementById('daily-block').style.display = 'none';
                 
@@ -441,18 +437,18 @@
                 document.getElementById('fixed-name').textContent = appState.user.activeFixed.desc;
                 document.getElementById('fixed-days').textContent = daysLeft;
             } else {
-                // Только ежедневный
-                appState.user.activeFixed = null; // Сброс если истек
+                appState.user.activeFixed = null;
+                localStorage.removeItem('nc_vpn_active_fixed');
                 document.getElementById('active-fixed-card').style.display = 'none';
                 document.getElementById('daily-block').style.display = 'block';
                 
-                // Расчет дней для ежедневного (6р/день)
-                document.getElementById('days-left').textContent = Math.floor(appState.user.balance / 6) + ' дней';
-                
-                // Рендер тарифов на главной (ежедневные)
+                // Правильный расчет дней по выбранному тарифу
+                const days = Math.floor(appState.user.balance / appState.user.selectedPriceDay);
+                document.getElementById('days-left').textContent = days + ' дней';
+
                 const mainPlans = document.getElementById('user-plans-container');
                 mainPlans.innerHTML = appState.dailyPlans.map((t, i) => `
-                    <div class="plan-btn ${i===0?'active':''}" onclick="selectMainPlan(this)">
+                    <div class="plan-btn ${t.devices === appState.user.selectedDevices ? 'active' : ''}" onclick="selectDailyPlan(${t.devices}, ${t.priceDay})">
                         <div class="plan-devices">${t.devices} устр.</div>
                         <div class="plan-price-day">${t.priceDay} ₽/день</div>
                     </div>
@@ -460,54 +456,55 @@
             }
         }
 
-        function selectMainPlan(el) {
-            document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
+        function selectDailyPlan(devices, priceDay) {
+            appState.user.selectedDevices = devices;
+            appState.user.selectedPriceDay = priceDay;
+            updateUI();
+        }
+
+        function scrollPlans(amount) {
+            document.getElementById('user-plans-container').scrollBy({ left: amount, behavior: 'smooth' });
         }
 
         function topUpBalance() {
             appState.user.balance += 100;
-            tg.showAlert('Баланс пополнен на 100₽ (Демо)');
+            localStorage.setItem('nc_vpn_balance', appState.user.balance);
             updateUI();
+            tg.showAlert('Баланс пополнен на 100₽ (Демо)');
         }
 
-        // ===== ТАРИФЫ (ФИКСИРОВАННЫЕ) =====
-        function renderUserTariffsList() {
-            const container = document.getElementById('user-tariffs-list');
-            container.innerHTML = appState.tariffs.map(t => `
-                <div class="card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-size: 18px; font-weight: bold; color: var(--success);">${t.price} Rub</div>
-                        <div style="font-size: 13px; color: var(--text-muted); margin-top: 5px;">${t.desc}</div>
-                    </div>
-                    <button class="btn" style="width: auto; padding: 10px;" onclick="buyFixedTariff(${t.id})">Купить</button>
-                </div>
-            `).join('');
-        }
-
-        function buyFixedTariff(id) {
-            if (appState.user.activeFixed) {
-                return tg.showAlert('У вас уже есть активный пакетный тариф. Дождитесь его окончания.');
+        async function connectVpn() {
+            if (appState.user.balance <= 0) {
+                return tg.showAlert('Недостаточно средств! Пополните баланс.');
             }
-            const tariff = appState.tariffs.find(t => t.id === id);
-            if (appState.user.balance < tariff.price) {
-                return tg.showAlert('Недостаточно средств на балансе! Пополните баланс.');
+
+            appState.user.hasActiveKey = true;
+            localStorage.setItem('nc_vpn_has_active_key', 'true');
+            switchTab('connect');
+
+            const linkEl = document.getElementById('sub-link');
+            linkEl.textContent = 'Получение ссылки...';
+
+            try {
+                const res = await fetch('/api/create-vpn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_id: appState.user.tg_id, devices: appState.user.selectedDevices })
+                });
+                const data = await res.json();
+                linkEl.textContent = data.subscription_url || 'Ошибка получения ссылки';
+            } catch(e) {
+                linkEl.textContent = 'Ошибка соединения с сервером';
             }
-            
-            tg.showConfirm(`Купить тариф "${tariff.desc}" за ${tariff.price}₽?`, (ok) => {
-                if (ok) {
-                    appState.user.balance -= tariff.price;
-                    const expires = Date.now() + (tariff.days * 24 * 60 * 60 * 1000);
-                    appState.user.activeFixed = { desc: tariff.desc, expires: expires };
-                    localStorage.setItem('nc_vpn_active_fixed', JSON.stringify(appState.user.activeFixed));
-                    
-                    tg.showAlert('Тариф успешно куплен!');
-                    switchTab('home');
-                }
-            });
         }
 
-        // ===== ПОДДЕРЖКА =====
+        function copyLink() {
+            const link = document.getElementById('sub-link').textContent;
+            if (link && !link.includes('Ошибка') && !link.includes('Загрузка')) {
+                navigator.clipboard.writeText(link).then(() => tg.showAlert('Ссылка скопирована!'));
+            }
+        }
+
         async function sendSupport() {
             const subject = document.getElementById('support-subject').value;
             const msg = document.getElementById('support-msg').value;
@@ -525,30 +522,25 @@
                     document.getElementById('support-subject').value = '';
                     document.getElementById('support-msg').value = '';
                 } else {
-                    tg.showAlert('Ошибка бэкенда: ' + data.error);
+                    tg.showAlert('Ошибка сервера: ' + data.error);
                 }
-            } catch(e) { tg.showAlert('Ошибка сети: проверьте подключение'); }
+            } catch(e) { tg.showAlert('Ошибка сети'); }
         }
 
-        // ===== АДМИН: ЮЗЕРЫ (С поиском) =====
         function renderAdminUsers() {
-            const search = document.getElementById('admin-search-user').value.toLowerCase();
+            const search = (document.getElementById('admin-search-user')?.value || '').toLowerCase();
             const list = document.getElementById('admin-users-list');
+            if(!list) return;
             
             const filtered = appState.allUsers.filter(u => u.username.toLowerCase().includes(search));
             
-            if (filtered.length === 0) {
-                list.innerHTML = '<div style="color: var(--text-muted); text-align: center;">Никого не найдено</div>';
-                return;
-            }
-
-            list.innerHTML = filtered.map((u, index) => {
+            list.innerHTML = filtered.length === 0 ? '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Никого не найдено</div>' : filtered.map((u) => {
                 const realIndex = appState.allUsers.findIndex(orig => orig.tg_id === u.tg_id);
                 return `
                 <div class="user-row">
                     <div>
                         <div style="font-size:14px; font-weight:bold;">${u.name}</div>
-                        <div style="font-size:11px; color:var(--text-muted);">${u.username} (ID: ${u.tg_id})</div>
+                        <div style="font-size:11px; color:var(--text-muted);">${u.username}</div>
                     </div>
                     <div style="display:flex; align-items:center;">
                         <input type="number" id="user-bal-${realIndex}" value="${u.balance}">
@@ -562,23 +554,33 @@
         }
 
         function saveUserBalance(index) {
-            const newBal = parseInt(document.getElementById(`user-bal-${index}`).value);
+            const newBal = parseInt(document.getElementById(`user-bal-${index}`).value) || 0;
             appState.allUsers[index].balance = newBal;
+            
+            // Если редактируется сам текущий пользователь
+            if (appState.allUsers[index].tg_id === appState.user.tg_id) {
+                appState.user.balance = newBal;
+                localStorage.setItem('nc_vpn_balance', newBal);
+            }
+            
+            saveAllUsers();
+            updateUI();
             tg.showAlert('Баланс сохранен!');
         }
 
         function toggleUserBlock(index) {
             appState.allUsers[index].blocked = !appState.allUsers[index].blocked;
+            saveAllUsers();
             renderAdminUsers();
         }
 
-        // ===== АДМИН: ТАРИФЫ =====
         function renderAdminTariffs() {
             const list = document.getElementById('admin-tariffs-list');
+            if(!list) return;
             list.innerHTML = appState.tariffs.map((t, index) => `
                 <div class="user-row" style="justify-content: flex-start;">
                     <div style="flex:1;">
-                        <div style="font-weight:bold; color:var(--success);">${t.price} Rub (${t.days} дней)</div>
+                        <div style="font-weight:bold; color:var(--success);">${t.price} Rub (${t.days} дн., ${t.devices} устр.)</div>
                         <div style="font-size:12px; color:var(--text-muted);">${t.desc}</div>
                     </div>
                     <button class="btn btn-danger" style="width:auto; padding:5px 10px; font-size:12px;" onclick="deleteTariff(${index})">Удалить</button>
@@ -590,13 +592,10 @@
             const price = document.getElementById('new-tariff-price').value;
             const desc = document.getElementById('new-tariff-desc').value;
             const days = document.getElementById('new-tariff-days').value;
-            if(!price || !desc || !days) return tg.showAlert('Заполните все поля!');
+            const devices = document.getElementById('new-tariff-devices').value;
+            if(!price || !desc || !days || !devices) return tg.showAlert('Заполните все поля!');
             
-            appState.tariffs.push({ id: Date.now(), price: parseInt(price), desc: desc, days: parseInt(days) });
-            document.getElementById('new-tariff-price').value = '';
-            document.getElementById('new-tariff-desc').value = '';
-            document.getElementById('new-tariff-days').value = '';
-            
+            appState.tariffs.push({ id: Date.now(), price: parseInt(price), desc: desc, days: parseInt(days), devices: parseInt(devices) });
             renderAdminTariffs();
             renderUserTariffsList();
             tg.showAlert('Тариф добавлен!');
@@ -608,9 +607,40 @@
             renderUserTariffsList();
         }
 
-        // ===== АДМИН: КОЛЕСО =====
+        function renderUserTariffsList() {
+            const container = document.getElementById('user-tariffs-list');
+            if(!container) return;
+            container.innerHTML = appState.tariffs.map(t => `
+                <div class="card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 18px; font-weight: bold; color: var(--success);">${t.price} Rub</div>
+                        <div style="font-size: 13px; color: var(--text-muted); margin-top: 5px;">${t.desc}</div>
+                    </div>
+                    <button class="btn" style="width: auto; padding: 10px;" onclick="buyFixedTariff(${t.id})">Купить</button>
+                </div>
+            `).join('');
+        }
+
+        function buyFixedTariff(id) {
+            if (appState.user.activeFixed) return tg.showAlert('У вас уже есть активный пакетный тариф.');
+            const tariff = appState.tariffs.find(t => t.id === id);
+            if (appState.user.balance < tariff.price) return tg.showAlert('Недостаточно средств!');
+            
+            tg.showConfirm(`Купить "${tariff.desc}" за ${tariff.price}₽?`, (ok) => {
+                if (ok) {
+                    appState.user.balance -= tariff.price;
+                    localStorage.setItem('nc_vpn_balance', appState.user.balance);
+                    appState.user.activeFixed = { desc: tariff.desc, expires: Date.now() + (tariff.days * 86400000) };
+                    localStorage.setItem('nc_vpn_active_fixed', JSON.stringify(appState.user.activeFixed));
+                    tg.showAlert('Тариф куплен!');
+                    switchTab('home');
+                }
+            });
+        }
+
         function renderAdminWheelList() {
             const list = document.getElementById('admin-wheel-list');
+            if(!list) return;
             list.innerHTML = appState.wheelItems.map((item, index) => `
                 <div class="wheel-item-row" style="border-left-color: ${item.color}">
                     <div style="font-weight:bold; font-size:14px;">${item.label}</div>
@@ -628,7 +658,6 @@
             const color = document.getElementById('new-wheel-color').value;
             if(!label) return tg.showAlert('Введите текст!');
             
-            // Пытаемся вытащить число для баланса, если это не Lose
             let value = 0;
             if (label.toLowerCase() !== 'lose' && label.toLowerCase() !== '0') {
                 const num = parseInt(label.replace(/\D/g, ''));
@@ -636,10 +665,8 @@
             }
 
             appState.wheelItems.push({ label: label, color: color, value: value });
-            document.getElementById('new-wheel-label').value = '';
             renderAdminWheelList();
             drawWheel();
-            tg.showAlert('Сектор добавлен!');
         }
 
         function deleteWheelItem(index) {
@@ -651,11 +678,9 @@
         function moveWheelItem(index, direction) {
             const newIndex = index + direction;
             if (newIndex < 0 || newIndex >= appState.wheelItems.length) return;
-            
             const temp = appState.wheelItems[index];
             appState.wheelItems[index] = appState.wheelItems[newIndex];
             appState.wheelItems[newIndex] = temp;
-            
             renderAdminWheelList();
             drawWheel();
         }
@@ -682,7 +707,6 @@
         function updateWheelState() {
             const wrapper = document.getElementById('wheel-wrapper');
             let disabledOverlay = document.getElementById('wheel-disabled-overlay');
-            
             if (!appState.wheelEnabled) {
                 if(!disabledOverlay) {
                     const overlay = document.createElement('div');
@@ -696,7 +720,6 @@
             }
         }
 
-        // ===== ОТРИСОВКА КОЛЕСА =====
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const centerX = canvas.width / 2;
@@ -784,12 +807,11 @@
                     msg = 'Lose!'; historyText = 'Lose';
                 } else {
                     msg = `Выигрыш ${prize.label}!`; appState.user.balance += prize.value; historyText = `+${prize.label}`;
+                    localStorage.setItem('nc_vpn_balance', appState.user.balance);
                 }
 
                 appState.user.lastSpin = now;
-                appState.user.wheelHistory.unshift({ date: dateStr, prize: historyText });
                 localStorage.setItem('nc_vpn_lastSpin', appState.user.lastSpin);
-                localStorage.setItem('nc_vpn_wheel', JSON.stringify(appState.user.wheelHistory));
 
                 tg.showAlert(msg);
                 updateUI();
@@ -797,7 +819,6 @@
             }, 4000);
         }
 
-        // Инициализация
         updateUI();
         updateCooldownUI();
         updateWheelState();
