@@ -18,8 +18,10 @@
         }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
+        /* Экран приветствия */
         #welcome-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; transition: opacity 0.5s; }
         .logo-text { font-size: 40px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(90deg, #007aff, #00c6ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        .welcome-subtitle { font-size: 18px; color: var(--text); margin-bottom: 30px; }
         .btn-main { background: var(--accent); color: white; border: none; padding: 18px 40px; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; }
 
         .sidebar { position: fixed; top: 0; left: -320px; width: 320px; height: 100%; background: rgba(28, 28, 30, 0.98); backdrop-filter: blur(10px); z-index: 1000; transition: 0.3s; padding: 20px; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
@@ -75,9 +77,11 @@
 </head>
 <body>
 
+    <!-- ЭКРАН ПРИВЕТСТВИЯ (ТЕПЕРЬ С ИМЕНЕМ) -->
     <div id="welcome-screen">
         <h1 class="logo-text">NEW CHAPTER</h1>
-        <p style="color: var(--text-muted); margin-bottom: 20px;">Добро пожаловать в NC VPN</p>
+        <!-- Сюда подставляется имя пользователя через JS -->
+        <p class="welcome-subtitle" id="welcome-message">Загрузка профиля...</p>
         <button class="btn-main" onclick="closeWelcome()">Продолжить</button>
     </div>
 
@@ -174,7 +178,10 @@
                 <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
                     <div id="user-avatar" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #007aff, #00c6ff); display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold;">U</div>
                     <div>
-                        <div style="font-size: 20px; font-weight: bold;" id="user-nickname">User</div>
+                        <div style="font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <span id="user-nickname">User</span>
+                            <span style="cursor: pointer; font-size: 14px; color: var(--accent);" onclick="changeNickname()">✏️</span>
+                        </div>
                         <div style="color: var(--text-muted); font-size: 13px;" id="user-tg-username">@username</div>
                     </div>
                 </div>
@@ -280,12 +287,16 @@
         tg.ready();
         tg.expand();
 
+        // При загрузке проверяем сохраненное имя
+        const savedNickname = localStorage.getItem('nc_vpn_nickname');
+        const tgFirstName = tg.initDataUnsafe?.user?.first_name || 'User';
+
         let appState = {
             isAdmin: false,
             user: {
                 tg_id: tg.initDataUnsafe?.user?.id || 123456789,
                 tg_username: tg.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : '@no_username',
-                nickname: tg.initDataUnsafe?.user?.first_name || 'User',
+                nickname: savedNickname || tgFirstName,
                 balance: 0, 
                 selectedDevices: 1,
                 selectedPriceDay: 6,
@@ -316,6 +327,9 @@
             ]
         };
 
+        // Обновляем текст на экране приветствия при загрузке
+        document.getElementById('welcome-message').innerHTML = `Привет, <b>${appState.user.nickname}</b>!<br>Рады видеть тебя в NC VPN.`;
+
         // --- СИНХРОНИЗАЦИЯ С БАЗОЙ ДАННЫХ ---
         async function syncUserWithDB() {
             try {
@@ -342,10 +356,7 @@
             document.getElementById('welcome-screen').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('welcome-screen').style.display = 'none';
-                if (tg.initDataUnsafe?.user) {
-                    tg.showAlert(`Привет, ${appState.user.nickname}!`);
-                    document.getElementById('user-avatar').textContent = appState.user.nickname.charAt(0).toUpperCase();
-                }
+                // Убрали tg.showAlert, теперь он не нужен
                 syncUserWithDB(); // Загружаем данные из БД
             }, 500);
         }
@@ -382,6 +393,18 @@
             if(tab === 'admin-wheel') renderAdminWheelList();
             if(tab === 'tariffs') renderUserTariffsList();
             updateUI();
+        }
+
+        // Смена никнейма (сохраняется в localStorage)
+        function changeNickname() {
+            const newNick = window.prompt("Введите новый никнейм:", appState.user.nickname);
+            if (newNick && newNick.trim() !== '') {
+                appState.user.nickname = newNick.trim();
+                localStorage.setItem('nc_vpn_nickname', appState.user.nickname);
+                // Обновляем текст на экране приветствия для следующего раза
+                document.getElementById('welcome-message').innerHTML = `Привет, <b>${appState.user.nickname}</b>!<br>Рады видеть тебя в NC VPN.`;
+                updateUI();
+            }
         }
 
         function handleAdminAuthClick() {
@@ -687,7 +710,6 @@
             tg.showConfirm('Сбросить кулдаун колеса для ВСЕХ?', (ok) => {
                 if(ok) {
                     localStorage.setItem('nc_vpn_lastSpin', 0);
-                    // Сброс кулдауна для всех на сервере мы сделаем позже
                     tg.showAlert('Кулдаун сброшен!');
                 }
             });
