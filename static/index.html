@@ -60,6 +60,8 @@
         .wheel-container { position: relative; text-align: center; margin: 20px 0; display: flex; justify-content: center; }
         .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
         canvas { transition: transform 7s cubic-bezier(0.1, 0.8, 0.2, 1); }
+        
+        /* Оверлей кулдауна */
         .cooldown-overlay { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: rgba(0,0,0,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 20; border: 2px solid var(--border); }
         
         input, textarea { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
@@ -77,10 +79,9 @@
 </head>
 <body>
 
-    <!-- ЭКРАН ПРИВЕТСТВИЯ (ТЕПЕРЬ С ИМЕНЕМ) -->
+    <!-- ЭКРАН ПРИВЕТСТВИЯ -->
     <div id="welcome-screen">
         <h1 class="logo-text">NEW CHAPTER</h1>
-        <!-- Сюда подставляется имя пользователя через JS -->
         <p class="welcome-subtitle" id="welcome-message">Загрузка профиля...</p>
         <button class="btn-main" onclick="closeWelcome()">Продолжить</button>
     </div>
@@ -287,7 +288,6 @@
         tg.ready();
         tg.expand();
 
-        // При загрузке проверяем сохраненное имя
         const savedNickname = localStorage.getItem('nc_vpn_nickname');
         const tgFirstName = tg.initDataUnsafe?.user?.first_name || 'User';
 
@@ -301,6 +301,7 @@
                 selectedDevices: 1,
                 selectedPriceDay: 6,
                 activeFixed: null,
+                lastSpin: Number(localStorage.getItem('nc_vpn_lastSpin')) || 0, // КУЛДАУН
                 topupHistory: JSON.parse(localStorage.getItem('nc_vpn_topup_history')) || [],
                 wheelHistory: JSON.parse(localStorage.getItem('nc_vpn_wheel_history')) || []
             },
@@ -356,8 +357,8 @@
             document.getElementById('welcome-screen').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('welcome-screen').style.display = 'none';
-                // Убрали tg.showAlert, теперь он не нужен
                 syncUserWithDB(); // Загружаем данные из БД
+                updateCooldownUI(); // Проверяем кулдаун
             }, 500);
         }
 
@@ -392,16 +393,15 @@
             if(tab === 'admin-tariffs') renderAdminTariffs();
             if(tab === 'admin-wheel') renderAdminWheelList();
             if(tab === 'tariffs') renderUserTariffsList();
+            if(tab === 'wheel') updateCooldownUI(); // Обновляем при переходе на колесо
             updateUI();
         }
 
-        // Смена никнейма (сохраняется в localStorage)
         function changeNickname() {
             const newNick = window.prompt("Введите новый никнейм:", appState.user.nickname);
             if (newNick && newNick.trim() !== '') {
                 appState.user.nickname = newNick.trim();
                 localStorage.setItem('nc_vpn_nickname', appState.user.nickname);
-                // Обновляем текст на экране приветствия для следующего раза
                 document.getElementById('welcome-message').innerHTML = `Привет, <b>${appState.user.nickname}</b>!<br>Рады видеть тебя в NC VPN.`;
                 updateUI();
             }
@@ -710,6 +710,8 @@
             tg.showConfirm('Сбросить кулдаун колеса для ВСЕХ?', (ok) => {
                 if(ok) {
                     localStorage.setItem('nc_vpn_lastSpin', 0);
+                    appState.user.lastSpin = 0;
+                    updateCooldownUI();
                     tg.showAlert('Кулдаун сброшен!');
                 }
             });
@@ -735,6 +737,7 @@
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const centerX = canvas.width / 2, centerY = canvas.height / 2, radius = 140;
+        
         function drawWheel() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const items = appState.wheelItems;
@@ -754,6 +757,42 @@
         }
         drawWheel();
 
+        // Логика кулдауна
+        function updateCooldownUI() {
+            const wrapper = document.getElementById('wheel-wrapper');
+            let existingOverlay = document.getElementById('cooldown-overlay');
+            const now = Date.now();
+            const CD_7_DAYS = 7 * 24 * 60 * 60 * 1000;
+            const timeLeft = CD_7_DAYS - (now - appState.user.lastSpin);
+
+            if (!appState.wheelEnabled) return;
+
+            if (appState.user.lastSpin > 0 && timeLeft > 0) {
+                if (!existingOverlay) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'cooldown-overlay';
+                    overlay.className = 'cooldown-overlay';
+                    overlay.innerHTML = '<div style="font-size:14px; color:var(--text-muted); margin-bottom:5px;">Кулдаун:</div><div id="cooldown-time" style="font-size:22px; font-weight:bold; color:var(--promo); font-family:monospace;">00:00:00</div>';
+                    wrapper.appendChild(overlay);
+                }
+                
+                const h = Math.floor(timeLeft / (1000 * 60 * 60));
+                const m = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                const timeEl = document.getElementById('cooldown-time');
+                if(timeEl) timeEl.textContent = `${h}ч.${m.toString().padStart(2, '0')}м.${s.toString().padStart(2, '0')}с`;
+                
+                document.getElementById('spin-btn').disabled = true;
+                document.getElementById('spin-btn').textContent = 'Кулдаун';
+            } else {
+                if (existingOverlay) existingOverlay.remove();
+                document.getElementById('spin-btn').disabled = false;
+                document.getElementById('spin-btn').textContent = 'Крутить';
+            }
+        }
+        
+        setInterval(updateCooldownUI, 1000);
+
         let currentRotation = 0;
         async function spinWheel() {
             if (!appState.wheelEnabled || appState.wheelItems.length === 0) return;
@@ -764,8 +803,16 @@
             const winIndex = Math.floor(Math.random() * appState.wheelItems.length);
             const prize = appState.wheelItems[winIndex];
 
-            const targetAngle = 360 - ((winIndex * (360 / appState.wheelItems.length)) + (360 / appState.wheelItems.length / 2));
-            currentRotation += (5 * 360) + (targetAngle - (currentRotation % 360));
+            // --- ТОЧНАЯ МАТЕМАТИКА (СТРЕЛКА СВЕРХУ) ---
+            const anglePerItem = 360 / appState.wheelItems.length;
+            const sliceCenter = (winIndex * anglePerItem) + (anglePerItem / 2);
+            
+            let targetAngle = 270 - sliceCenter; // 270 - это верх (12 часов)
+            const currentMod = currentRotation % 360;
+            let degreesToAdd = targetAngle - currentMod;
+            if (degreesToAdd < 0) degreesToAdd += 360;
+
+            currentRotation += (5 * 360) + degreesToAdd;
             canvas.style.transform = `rotate(${currentRotation}deg)`;
 
             setTimeout(async () => {
@@ -784,12 +831,17 @@
                     historyText = 'Lose';
                 }
                 
+                // ВКЛЮЧАЕМ КУЛДАУН
+                appState.user.lastSpin = Date.now();
+                localStorage.setItem('nc_vpn_lastSpin', appState.user.lastSpin);
+
                 const dateStr = new Date().toLocaleDateString();
                 appState.user.wheelHistory.unshift({ date: dateStr, prize: historyText });
                 localStorage.setItem('nc_vpn_wheel_history', JSON.stringify(appState.user.wheelHistory));
 
                 btn.disabled = false; btn.textContent = 'Крутить';
                 updateUI();
+                updateCooldownUI(); // Запускаем оверлей
             }, 7000);
         }
         
