@@ -24,6 +24,7 @@ class SupportRequest(BaseModel):
 
 @app.post("/api/create-vpn")
 async def create_vpn(req: CreateUserRequest):
+    # Заглушка, пока нет сервера
     return {"ok": True, "subscription_url": f"vless://TEST-LINK-FOR-{req.devices}-DEVICES@127.0.0.1:443"}
 
 @app.post("/api/support")
@@ -33,9 +34,9 @@ async def send_support(req: SupportRequest):
     TOPIC_ID = os.getenv("SUPPORT_TOPIC_ID")
     
     if not BOT_TOKEN:
-        return {"ok": False, "error": "В Amvera не задана переменная BOT_TOKEN!"}
+        return {"ok": False, "error": "В Amvera не задана переменная BOT_TOKEN"}
     if not CHAT_ID:
-        return {"ok": False, "error": "В Amvera не задана переменная SUPPORT_CHAT_ID!"}
+        return {"ok": False, "error": "В Amvera не задана переменная SUPPORT_CHAT_ID"}
 
     text = f"🆘 **Обращение в поддержку!**\n\n👤 От: {req.username} (ID: {req.user_id})\n📌 Тема: {req.subject}\n\n💬 Сообщение:\n{req.message}"
     
@@ -47,5 +48,8 @@ async def send_support(req: SupportRequest):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload) as resp:
-            if resp.status == 200: return {"ok": True}
-            else: return {"ok": False, "error": f"Ошибка ТГ: {await resp.text()}"}
+            if resp.status == 200: 
+                return {"ok": True}
+            else: 
+                err = await resp.text()
+                return {"ok": False, "error": f"Ошибка ТГ: {err}"}
