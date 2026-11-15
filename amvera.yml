@@ -5,10 +5,10 @@ meta:
     version: "3.12"
 build:
   requirementsPath: requirements.txt
-  ignore:
-    - venv
-    - .venv
-    - env
+  artifacts:
+    "main.py": /
+    "requirements.txt": /
+    "static": /static
 run:
   containerPort: 8000
   command: uvicorn main:app --host 0.0.0.0 --port 8000
