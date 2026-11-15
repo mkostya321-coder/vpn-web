@@ -2,34 +2,217 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <title>VPN App</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; background: #1a1a1a; color: #fff; }
-        button { padding: 15px 30px; font-size: 18px; background: #2ea6ff; color: white; border: none; border-radius: 10px; margin: 10px; }
-        #result { margin-top: 20px; word-break: break-all; }
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --text-muted: #8e8e93;
+            --accent-color: #2ea6ff;
+            --accent-hover: #1c85d6;
+            --border-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Шапка */
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Карточка баланса */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .balance-title {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .balance-amount {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        /* Выбор тарифа */
+        .plans {
+            display: flex;
+            gap: 10px;
+        }
+
+        .plan-btn {
+            flex: 1;
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .plan-btn.active {
+            border-color: var(--accent-color);
+            background-color: rgba(46, 166, 255, 0.1);
+        }
+
+        .plan-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .plan-price {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Кнопка */
+        .action-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background-color: var(--accent-color);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+
+        .action-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .action-btn:disabled {
+            background-color: var(--border-color);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Результат */
+        .result-box {
+            display: none;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 13px;
+            background-color: #000;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            color: #00ff88;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>VPN</h1>
-    <p>Нажми кнопку, чтобы получить ключ (5 устройств)</p>
-    <button onclick="createVpn()">Получить VPN</button>
-    <div id="result"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>⚡️ SuperVPN</h1>
+            <p>Быстрый и безопасный интернет</p>
+        </div>
+
+        <div class="card">
+            <div class="balance-title">Ваш баланс</div>
+            <div class="balance-amount">0 <span style="font-size: 20px;">₽</span></div>
+        </div>
+
+        <div style="margin-top: 10px;">
+            <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 10px;">Выберите тариф:</div>
+            <div class="plans">
+                <div class="plan-btn active" id="plan-1" onclick="selectPlan(1)">
+                    <div class="plan-title">1 устр.</div>
+                    <div class="plan-price">10 ₽ / день</div>
+                </div>
+                <div class="plan-btn" id="plan-5" onclick="selectPlan(5)">
+                    <div class="plan-title">5 устр.</div>
+                    <div class="plan-price">50 ₽ / день</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="action-btn" id="connect-btn" onclick="createVpn()">Подключить VPN</button>
+        <div class="result-box" id="result-box"></div>
+    </div>
 
     <script>
         const tg = Telegram.WebApp;
         tg.ready();
         tg.expand();
+        
+        // По умолчанию выбран тариф на 1 устройство
+        let currentDevices = 1;
+
+        // Функция переключения тарифа
+        function selectPlan(devices) {
+            currentDevices = devices;
+            
+            // Снимаем выделение со всех
+            document.getElementById('plan-1').classList.remove('active');
+            document.getElementById('plan-5').classList.remove('active');
+            
+            // Выделяем выбранный
+            document.getElementById('plan-' + devices).classList.add('active');
+        }
 
         async function createVpn() {
-            const resultDiv = document.getElementById('result');
-            resultDiv.textContent = 'Создаю...';
+            const btn = document.getElementById('connect-btn');
+            const resultBox = document.getElementById('result-box');
+            
+            btn.disabled = true;
+            btn.textContent = 'Создаю ключ...';
+            resultBox.style.display = 'none';
 
-            // Получаем ID пользователя из Telegram
             const userId = tg.initDataUnsafe?.user?.id;
             if (!userId) {
-                resultDiv.textContent = 'Ошибка: не удалось получить ID. Открой из Telegram.';
+                showError('Ошибка: откройте приложение через Telegram.');
                 return;
             }
 
@@ -37,18 +220,36 @@
                 const response = await fetch('/api/create-vpn', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegram_id: userId })
+                    body: JSON.stringify({ 
+                        telegram_id: userId,
+                        devices: currentDevices 
+                    })
                 });
                 const data = await response.json();
 
                 if (data.ok) {
-                    resultDiv.innerHTML = '✅ Готово!<br>Ссылка: ' + data.subscription_url;
+                    resultBox.style.display = 'block';
+                    resultBox.innerHTML = '✅ Успешно!<br><br>Ваш ключ:<br>' + data.subscription_url;
                 } else {
-                    resultDiv.textContent = '❌ Ошибка: ' + data.error;
+                    showError(data.error);
                 }
             } catch (e) {
-                resultDiv.textContent = '❌ Ошибка сети: ' + e.message;
+                showError('Ошибка сети: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Подключить VPN';
             }
+        }
+
+        function showError(msg) {
+            const resultBox = document.getElementById('result-box');
+            resultBox.style.display = 'block';
+            resultBox.style.color = '#ff4444';
+            resultBox.innerHTML = '❌ ' + msg;
+            
+            const btn = document.getElementById('connect-btn');
+            btn.disabled = false;
+            btn.textContent = 'Подключить VPN';
         }
     </script>
 </body>
