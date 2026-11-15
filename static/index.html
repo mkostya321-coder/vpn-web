@@ -4,181 +4,177 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <title>VPN App</title>
+    <title>NC VPN</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #ffffff;
+            --bg: #0f0f0f;
+            --card-bg: #1c1c1e;
+            --text: #ffffff;
             --text-muted: #8e8e93;
-            --accent-color: #2ea6ff;
-            --accent-hover: #1c85d6;
-            --border-color: #333333;
+            --accent: #007aff;
+            --accent-hover: #0056b3;
+            --success: #34c759;
+            --promo: #ff9500;
+            --border: #2c2c2e;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
         }
 
-        .container {
-            width: 100%;
-            max-width: 400px;
+        .container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 30px; }
+
+        /* Профиль */
+        .profile {
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 15px;
+            padding: 10px;
         }
+        .avatar {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: linear-gradient(135deg, #007aff, #00c6ff);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; font-weight: bold;
+        }
+        .profile-info h2 { font-size: 18px; }
+        .profile-info p { color: var(--text-muted); font-size: 13px; }
 
-        /* Шапка */
-        .header {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        
-        .header p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        /* Карточка баланса */
+        /* Карточки */
         .card {
-            background-color: var(--card-bg);
+            background: var(--card-bg);
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
         }
 
-        .balance-title {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 5px;
+        /* Баланс */
+        .balance-card { display: flex; justify-content: space-between; align-items: center; }
+        .balance-amount { font-size: 28px; font-weight: bold; margin-top: 5px; }
+        .btn-topup {
+            background: rgba(0, 122, 255, 0.15);
+            color: var(--accent);
+            border: none; padding: 10px 15px;
+            border-radius: 10px; font-weight: 600; cursor: pointer;
         }
 
-        .balance-amount {
-            font-size: 32px;
-            font-weight: bold;
+        /* Статистика */
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;
         }
-
-        /* Выбор тарифа */
-        .plans {
-            display: flex;
-            gap: 10px;
+        .stat-item {
+            background: var(--bg); padding: 12px; border-radius: 12px; text-align: center;
         }
+        .stat-title { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
+        .stat-value { font-size: 16px; font-weight: 600; color: var(--success); }
 
+        /* Лояльность */
+        .loyalty-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; }
+        .progress-bar { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 60%; background: linear-gradient(90deg, #ff9500, #ffcc00); border-radius: 4px; }
+
+        /* Тарифы */
+        .plans-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .plans-container::-webkit-scrollbar { display: none; }
+        
         .plan-btn {
-            flex: 1;
-            background-color: var(--card-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            padding: 15px 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
+            flex: 0 0 110px; background: var(--card-bg);
+            border: 2px solid var(--border); border-radius: 14px;
+            padding: 15px 10px; text-align: center; cursor: pointer;
+            position: relative; transition: all 0.2s;
         }
-
-        .plan-btn.active {
-            border-color: var(--accent-color);
-            background-color: rgba(46, 166, 255, 0.1);
+        .plan-btn.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.1); }
+        
+        .promo-badge {
+            position: absolute; top: -10px; right: -5px;
+            background: var(--promo); color: white; font-size: 10px; font-weight: bold;
+            padding: 2px 6px; border-radius: 6px;
         }
-
-        .plan-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .plan-price {
-            color: var(--text-muted);
-            font-size: 13px;
-        }
+        .plan-devices { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+        .plan-price-month { font-size: 11px; color: var(--text-muted); }
 
         /* Кнопка */
         .action-btn {
-            width: 100%;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            color: white;
-            background-color: var(--accent-color);
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            margin-top: 10px;
+            width: 100%; padding: 18px; font-size: 16px; font-weight: 600;
+            color: white; background: var(--accent); border: none; border-radius: 14px;
+            cursor: pointer; margin-top: 10px; transition: 0.2s;
         }
+        .action-btn:active { transform: scale(0.98); }
+        .action-btn:disabled { background: var(--border); color: var(--text-muted); }
 
-        .action-btn:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .action-btn:disabled {
-            background-color: var(--border-color);
-            color: var(--text-muted);
-            cursor: not-allowed;
-        }
-
-        /* Результат */
         .result-box {
-            display: none;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 13px;
-            background-color: #000;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            color: #00ff88;
-            margin-top: 10px;
+            display: none; word-break: break-all; font-family: monospace; font-size: 12px;
+            background: #000; padding: 15px; border-radius: 10px;
+            border: 1px solid var(--border); color: var(--success); margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="header">
-            <h1>⚡️ SuperVPN</h1>
-            <p>Быстрый и безопасный интернет</p>
+        <!-- Профиль -->
+        <div class="profile">
+            <div class="avatar" id="user-avatar">U</div>
+            <div class="profile-info">
+                <h2>NC VPN</h2>
+                <p id="user-name">Загрузка...</p>
+            </div>
         </div>
 
+        <!-- Баланс -->
+        <div class="card balance-card">
+            <div>
+                <div style="font-size: 13px; color: var(--text-muted);">Текущий баланс</div>
+                <div class="balance-amount">250 <span style="font-size: 18px;">₽</span></div>
+            </div>
+            <button class="btn-topup" onclick="tg.showAlert('Пополнение баланса появится на следующем этапе!')">+ Пополнить</button>
+        </div>
+
+        <!-- Статистика -->
         <div class="card">
-            <div class="balance-title">Ваш баланс</div>
-            <div class="balance-amount">0 <span style="font-size: 20px;">₽</span></div>
-        </div>
-
-        <div style="margin-top: 10px;">
-            <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 10px;">Выберите тариф:</div>
-            <div class="plans">
-                <div class="plan-btn active" id="plan-1" onclick="selectPlan(1)">
-                    <div class="plan-title">1 устр.</div>
-                    <div class="plan-price">10 ₽ / день</div>
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Статистика</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-title">Статус</div>
+                    <div class="stat-value" style="color: var(--success);">Активен</div>
                 </div>
-                <div class="plan-btn" id="plan-5" onclick="selectPlan(5)">
-                    <div class="plan-title">5 устр.</div>
-                    <div class="plan-price">50 ₽ / день</div>
+                <div class="stat-item">
+                    <div class="stat-title">Трафик</div>
+                    <div class="stat-value" style="color: var(--text);">1.4 ГБ</div>
                 </div>
             </div>
         </div>
 
-        <button class="action-btn" id="connect-btn" onclick="createVpn()">Подключить VPN</button>
+        <!-- Лояльность -->
+        <div class="card">
+            <div class="loyalty-title">
+                <span>До бесплатного дня</span>
+                <span style="color: var(--promo); font-weight: bold;">60%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Оплачивайте вовремя и получите 1 день бесплатно!</div>
+        </div>
+
+        <!-- Тарифы -->
+        <div style="margin-top: 5px;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Выберите количество устройств:</div>
+            <div class="plans-container" id="plans-container">
+                <!-- Тарифы рендерятся через JS -->
+            </div>
+        </div>
+
+        <button class="action-btn" id="connect-btn" onclick="createVpn()">Оплатить и подключить</button>
         <div class="result-box" id="result-box"></div>
     </div>
 
@@ -186,20 +182,46 @@
         const tg = Telegram.WebApp;
         tg.ready();
         tg.expand();
-        
-        // По умолчанию выбран тариф на 1 устройство
-        let currentDevices = 1;
 
-        // Функция переключения тарифа
-        function selectPlan(devices) {
-            currentDevices = devices;
+        // Инициализация профиля
+        if (tg.initDataUnsafe?.user) {
+            const user = tg.initDataUnsafe.user;
+            document.getElementById('user-name').textContent = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+            document.getElementById('user-avatar').textContent = user.first_name.charAt(0).toUpperCase();
+        }
+
+        // Твои тарифы
+        const plans = [
+            { devices: 1, priceDay: 6, priceMonth: 186, promo: false },
+            { devices: 2, priceDay: 7, priceMonth: 217, promo: false },
+            { devices: 3, priceDay: 8, priceMonth: 248, promo: false },
+            { devices: 4, priceDay: 8, priceMonth: 248, promo: true, promoText: "Акция" },
+            { devices: 5, priceDay: 9, priceMonth: 279, promo: false }
+        ];
+
+        let selectedPlan = plans[0]; // По умолчанию 1 устройство
+
+        // Рендер тарифов
+        const container = document.getElementById('plans-container');
+        plans.forEach((plan, index) => {
+            const div = document.createElement('div');
+            div.className = `plan-btn ${index === 0 ? 'active' : ''}`;
+            div.id = `plan-${plan.devices}`;
+            div.onclick = () => selectPlan(plan, index);
             
-            // Снимаем выделение со всех
-            document.getElementById('plan-1').classList.remove('active');
-            document.getElementById('plan-5').classList.remove('active');
-            
-            // Выделяем выбранный
-            document.getElementById('plan-' + devices).classList.add('active');
+            div.innerHTML = `
+                ${plan.promo ? `<div class="promo-badge">${plan.promoText}</div>` : ''}
+                <div class="plan-devices">${plan.devices} устр.</div>
+                <div class="plan-price-day">${plan.priceDay} ₽ / день</div>
+                <div class="plan-price-month">${plan.priceMonth} ₽ / мес</div>
+            `;
+            container.appendChild(div);
+        });
+
+        function selectPlan(plan, index) {
+            selectedPlan = plan;
+            document.querySelectorAll('.plan-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`plan-${plan.devices}`).classList.add('active');
         }
 
         async function createVpn() {
@@ -207,14 +229,10 @@
             const resultBox = document.getElementById('result-box');
             
             btn.disabled = true;
-            btn.textContent = 'Создаю ключ...';
+            btn.textContent = 'Обработка...';
             resultBox.style.display = 'none';
 
-            const userId = tg.initDataUnsafe?.user?.id;
-            if (!userId) {
-                showError('Ошибка: откройте приложение через Telegram.');
-                return;
-            }
+            const userId = tg.initDataUnsafe?.user?.id || 123456789;
 
             try {
                 const response = await fetch('/api/create-vpn', {
@@ -222,34 +240,23 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         telegram_id: userId,
-                        devices: currentDevices 
+                        devices: selectedPlan.devices 
                     })
                 });
                 const data = await response.json();
 
                 if (data.ok) {
                     resultBox.style.display = 'block';
-                    resultBox.innerHTML = '✅ Успешно!<br><br>Ваш ключ:<br>' + data.subscription_url;
+                    resultBox.innerHTML = `✅ Оплачено (${selectedPlan.priceDay}₽/день)<br>Тариф: ${selectedPlan.devices} устр.<br><br>Ваш ключ:<br>${data.subscription_url}`;
                 } else {
-                    showError(data.error);
+                    tg.showAlert('Ошибка: ' + data.error);
                 }
             } catch (e) {
-                showError('Ошибка сети: ' + e.message);
+                tg.showAlert('Ошибка сети: ' + e.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Подключить VPN';
+                btn.textContent = 'Оплатить и подключить';
             }
-        }
-
-        function showError(msg) {
-            const resultBox = document.getElementById('result-box');
-            resultBox.style.display = 'block';
-            resultBox.style.color = '#ff4444';
-            resultBox.innerHTML = '❌ ' + msg;
-            
-            const btn = document.getElementById('connect-btn');
-            btn.disabled = false;
-            btn.textContent = 'Подключить VPN';
         }
     </script>
 </body>
