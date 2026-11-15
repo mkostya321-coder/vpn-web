@@ -7,16 +7,16 @@
     <title>NC VPN</title>
     <style>
         :root {
-            --bg: #0f0f0f; --card-bg: #1c1c1e; --text: #ffffff; --text-muted: #8e8e93;
-            --accent: #007aff; --success: #34c759; --promo: #ff9500; --border: #2c2c2e; --danger: #ff3b30;
+            --bg: #0f0f0f; --card-bg: rgba(28, 28, 30, 0.85); --text: #ffffff; --text-muted: #8e8e93;
+            --accent: #007aff; --success: #34c759; --promo: #ff9500; --danger: #ff3b30; --border: #3a3a3c;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         
-        /* Переливающийся фон */
+        /* Переливающийся черно-белый/серый фон */
         body { 
-            background: linear-gradient(45deg, #0f0f0f, #2a2a2a, #0f0f0f);
+            background: linear-gradient(-45deg, #000000, #1c1c1e, #2c2c2e, #000000);
             background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            animation: gradientBG 12s ease infinite;
             color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; 
         }
         @keyframes gradientBG {
@@ -28,55 +28,62 @@
         /* Приветствие */
         #welcome-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; transition: opacity 0.5s; }
         #welcome-screen h1 { font-size: 40px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(90deg, #007aff, #00c6ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
-        .btn-continue { background: var(--accent); color: white; border: none; padding: 18px 40px; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4); }
+        .btn-continue { background: var(--accent); color: white; border: none; padding: 18px 40px; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; }
 
         /* Меню */
-        .sidebar { position: fixed; top: 0; left: -300px; width: 300px; height: 100%; background: var(--card-bg); z-index: 1000; transition: 0.3s; padding: 20px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar { position: fixed; top: 0; left: -300px; width: 300px; height: 100%; background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(10px); z-index: 1000; transition: 0.3s; padding: 20px; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
         .sidebar.open { left: 0; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; display: none; opacity: 0; transition: 0.3s; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; display: none; opacity: 0; transition: 0.3s; }
         .overlay.open { display: block; opacity: 1; }
         .menu-item { display: flex; align-items: center; gap: 10px; padding: 15px; border-radius: 10px; margin-bottom: 5px; cursor: pointer; font-weight: 600; color: var(--text); }
-        .menu-item:hover { background: rgba(255,255,255,0.05); }
+        .menu-item:hover { background: rgba(255,255,255,0.1); }
         .menu-item.active { background: var(--accent); color: white; }
+        
+        .admin-section-title { font-size: 12px; color: var(--promo); margin: 15px 0 5px 15px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
 
         /* Шапка */
-        .header { display: flex; align-items: center; padding: 15px; background: rgba(15,15,15,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        .header { display: flex; align-items: center; padding: 15px; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
         .burger { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; }
         .header-title { font-size: 20px; font-weight: bold; flex: 1; text-align: center; padding-right: 30px;}
         .back-btn { font-size: 24px; cursor: pointer; padding: 5px 15px 5px 5px; display: none; }
 
         /* Контент */
         .main-content { padding: 15px; padding-bottom: 80px; flex: 1; }
-        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 15px; }
+        .card { background: var(--card-bg); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 15px; }
         .balance-value { font-size: 24px; font-weight: bold; }
         .btn { background: var(--accent); color: white; border: none; padding: 12px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center; width: 100%;}
         .btn:active { transform: scale(0.95); }
         .btn:disabled { background: var(--border); color: var(--text-muted); }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
         
         /* Тарифы со стрелками */
         .plans-wrapper { display: flex; align-items: center; gap: 5px; margin-top: 10px; }
         .scroll-arrow { font-size: 14px; color: var(--text-muted); padding: 5px; pointer-events: none; user-select: none; opacity: 0.5;}
         .plans-container { display: flex; gap: 10px; overflow-x: auto; padding: 15px 5px; scrollbar-width: none; flex: 1; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
         .plans-container::-webkit-scrollbar { display: none; }
-        .plan-btn { flex: 0 0 100px; background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 15px 5px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; }
-        .plan-btn.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.1); }
+        .plan-btn { flex: 0 0 100px; background: rgba(0,0,0,0.5); border: 2px solid var(--border); border-radius: 14px; padding: 15px 5px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; }
+        .plan-btn.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.2); }
         .promo-badge { position: absolute; top: -10px; right: -5px; background: var(--promo); color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 8px; }
         .plan-devices { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
         .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; }
         
-        /* Колесо и кулдаун */
+        /* Колесо */
         .wheel-container { position: relative; text-align: center; margin: 20px 0; display: flex; justify-content: center; }
         .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
         canvas { transition: transform 4s cubic-bezier(0.25, 1, 0.5, 1); }
-        .cooldown-overlay { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: rgba(0,0,0,0.85); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 20; border: 2px solid var(--border); }
+        .cooldown-overlay { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: rgba(0,0,0,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 20; border: 2px solid var(--border); }
         
         /* История и формы */
         .history-list { list-style: none; margin-top: 10px; }
         .history-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
         .history-list li:last-child { border-bottom: none; }
-        input[type="text"], input[type="password"], input[type="number"], textarea { width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
-        textarea { resize: vertical; min-height: 100px; }
-
+        input, textarea { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
+        
+        /* Админ таблицы */
+        .user-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+        .user-row input { width: 80px; margin: 0 10px; padding: 5px; text-align: center; }
+        
         .footer { padding: 20px; text-align: center; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: auto; }
         .footer a { color: var(--accent); text-decoration: none; font-weight: bold; }
     </style>
@@ -99,8 +106,17 @@
         <div class="menu-item" id="tab-tariffs" onclick="switchTab('tariffs')">💳 Тарифы</div>
         <div class="menu-item" id="tab-support" onclick="switchTab('support')">🆘 Поддержка</div>
         
+        <!-- Блок Админа (Скрыт по умолчанию) -->
+        <div id="admin-menu" style="display: none;">
+            <div class="admin-section-title">Управление</div>
+            <div class="menu-item" id="tab-admin-users" onclick="switchTab('admin-users')">👥 Пользователи</div>
+            <div class="menu-item" id="tab-admin-tariffs" onclick="switchTab('admin-tariffs')">💳 Руковод. Тарифы</div>
+            <div class="menu-item" id="tab-admin-wheel" onclick="switchTab('admin-wheel')">🎡 Ред. Колесо</div>
+        </div>
+
         <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 10px;">
-            <div class="menu-item" style="color: var(--promo);" id="tab-admin-login" onclick="switchTab('admin-login')">⚙️ Войти в АдмПрофиль</div>
+            <!-- Кнопка входа/выхода -->
+            <div class="menu-item" style="color: var(--promo);" id="admin-auth-btn" onclick="handleAdminAuthClick()">⚙️ Войти в АдмПрофиль</div>
         </div>
     </div>
 
@@ -122,16 +138,15 @@
                 <button class="btn" style="width: auto;" onclick="tg.showAlert('Пополнение появится позже!')">+ Пополнить</button>
             </div>
 
-            <div class="card" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
+            <div class="card">
                 <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Подписка истекает через</div>
                 <div style="font-size: 24px; font-weight: bold; color: var(--success);" id="days-left">0 дней</div>
             </div>
 
             <div style="font-size: 16px; font-weight: bold; margin-top: 20px;">Выберите ежедневный тариф:</div>
-            
             <div class="plans-wrapper">
                 <div class="scroll-arrow">❮</div>
-                <div class="plans-container" id="plans-container"></div>
+                <div class="plans-container" id="user-plans-container"></div>
                 <div class="scroll-arrow">❯</div>
             </div>
             
@@ -142,24 +157,9 @@
         <div id="view-connect" style="display: none;">
             <h2 style="text-align: center; margin-bottom: 20px;">Настройка VPN</h2>
             <div class="card">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">1. Скопируйте ссылку подписки</div>
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">1. Скопируйте ссылку</div>
                 <div style="background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin: 10px 0; border: 1px solid var(--border); color: var(--success);" id="sub-link">vless://dummy-link-for-now@127.0.0.1:443</div>
-                <button class="btn" onclick="copyLink()">Скопировать ссылку</button>
-            </div>
-            <div class="card">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">2. Установите клиент</div>
-                <div style="display: flex; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px; margin-bottom: 10px;">
-                    <div style="width: 40px; height: 40px; background: #007aff; color: white; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: bold; margin-right: 15px;">H</div>
-                    <div><h4>Happ</h4><p style="color: var(--text-muted); font-size: 12px;">Windows, iOS, Android</p></div>
-                </div>
-                <div style="display: flex; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px; margin-bottom: 10px;">
-                    <div style="width: 40px; height: 40px; background: #34c759; color: white; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: bold; margin-right: 15px;">V</div>
-                    <div><h4>v2RayTun</h4><p style="color: var(--text-muted); font-size: 12px;">iOS, Android</p></div>
-                </div>
-                <div style="display: flex; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px;">
-                    <div style="width: 40px; height: 40px; background: #ff9500; color: white; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: bold; margin-right: 15px;">H</div>
-                    <div><h4>Hiddify</h4><p style="color: var(--text-muted); font-size: 12px;">Windows, macOS, Linux, Android, iOS</p></div>
-                </div>
+                <button class="btn" onclick="copyLink()">Скопировать</button>
             </div>
         </div>
 
@@ -173,20 +173,14 @@
                             <span id="user-nickname">User_1234</span>
                             <span style="cursor: pointer; font-size: 14px; color: var(--accent);" onclick="changeNickname()">✏️</span>
                         </div>
-                        <div style="color: var(--text-muted); font-size: 13px;" id="user-tg-name">Telegram User</div>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 15px; border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 12px;">
                     <div><div style="font-size: 12px; color: var(--text-muted);">Баланс</div><div class="balance-value" id="profile-balance">0 ₽</div></div>
                 </div>
             </div>
-
             <div class="card">
-                <h3 style="font-size: 16px; margin-bottom: 10px;">История пополнений</h3>
-                <ul class="history-list" id="topup-history"><li style="color: var(--text-muted);">Пока пусто</li></ul>
-            </div>
-            <div class="card">
-                <h3 style="font-size: 16px; margin-bottom: 10px;">История Колеса Фортуны</h3>
+                <h3 style="font-size: 16px; margin-bottom: 10px;">История Колеса</h3>
                 <ul class="history-list" id="wheel-history"><li style="color: var(--text-muted);">Пока пусто</li></ul>
             </div>
         </div>
@@ -195,7 +189,6 @@
         <div id="view-wheel" style="display: none;">
             <div class="card">
                 <h3 style="text-align: center;">Колесо Фортуны</h3>
-                <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">1 вращение в 7 дней</p>
                 <div class="wheel-container" id="wheel-wrapper">
                     <div class="wheel-pointer">▼</div>
                     <canvas id="wheelCanvas" width="300" height="300"></canvas>
@@ -208,65 +201,60 @@
         <div id="view-support" style="display: none;">
             <div class="card">
                 <h3 style="margin-bottom: 10px;">Связь с поддержкой</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Опишите вашу проблему, и мы ответим вам в ближайшее время.</p>
-                <input type="text" id="support-subject" placeholder="Тема (например: Не работает VPN)">
-                <textarea id="support-msg" placeholder="Подробно опишите проблему..."></textarea>
-                <button class="btn" onclick="sendSupport()">Отправить в поддержку</button>
+                <input type="text" id="support-subject" placeholder="Тема">
+                <textarea id="support-msg" placeholder="Опишите проблему..."></textarea>
+                <button class="btn" onclick="sendSupport()">Отправить</button>
             </div>
         </div>
 
-        <!-- ТАРИФЫ (ИСПРАВЛЕН БАГ ОТОБРАЖЕНИЯ) -->
+        <!-- ТАРИФЫ (Пользовательские) -->
         <div id="view-tariffs" style="display: none;">
             <h3 style="margin-bottom: 15px;">Все тарифы</h3>
-            <div class="card" style="padding: 15px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>1 устройство</span><span><b>186 ₽ / мес</b> (6 ₽/день)</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>2 устройства</span><span><b>217 ₽ / мес</b> (7 ₽/день)</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>3 устройства</span><span><b>248 ₽ / мес</b> (8 ₽/день)</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                    <span>4 устройства (Акция)</span><span><b>248 ₽ / мес</b> (8 ₽/день)</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>5 устройств</span><span><b>279 ₽ / мес</b> (9 ₽/день)</span>
-                </div>
-            </div>
+            <div id="user-tariffs-list"></div>
         </div>
 
-        <!-- ВХОД В АДМИНКУ -->
+        <!-- АДМИН: ВХОД -->
         <div id="view-admin-login" style="display: none;">
             <div class="card">
                 <h3 style="margin-bottom: 10px;">Вход в Админ-панель</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Используйте логин и пароль, выданные владельцем в боте.</p>
                 <input type="text" id="admin-login" placeholder="Логин">
                 <input type="password" id="admin-pass" placeholder="Пароль">
                 <button class="btn" onclick="checkAdminLogin()">Войти</button>
             </div>
         </div>
 
-        <!-- САМА АДМИНКА -->
-        <div id="view-admin-panel" style="display: none;">
+        <!-- АДМИН: ПОЛЬЗОВАТЕЛИ -->
+        <div id="view-admin-users" style="display: none;">
             <div class="card">
-                <h3 style="margin-bottom: 10px; color: var(--promo);">Управление балансом</h3>
-                <input type="number" id="admin-user-id" placeholder="Telegram ID пользователя">
-                <input type="number" id="admin-amount" placeholder="Сумма пополнения">
-                <button class="btn" onclick="adminAddBalance()">Начислить</button>
-            </div>
-            <div class="card">
-                <h3 style="margin-bottom: 10px; color: var(--promo);">Управление колесом</h3>
-                <button class="btn" style="background: var(--danger);" onclick="resetCooldownAll()">Сбросить кулдаун для всех</button>
+                <h3 style="margin-bottom: 15px; color: var(--promo);">Пользователи</h3>
+                <div id="admin-users-list"></div>
             </div>
         </div>
 
-    </div>
+        <!-- АДМИН: ТАРИФЫ -->
+        <div id="view-admin-tariffs" style="display: none;">
+            <div class="card">
+                <h3 style="margin-bottom: 15px; color: var(--promo);">Редактор тарифов</h3>
+                <div id="admin-tariffs-list" style="margin-bottom: 20px;"></div>
+                
+                <h4 style="margin-bottom: 10px;">Добавить тариф:</h4>
+                <input type="number" id="new-tariff-price" placeholder="Цена (например: 350)">
+                <input type="text" id="new-tariff-desc" placeholder="Описание (например: 3 Месяца на 4 устройства)">
+                <button class="btn btn-success" onclick="addNewTariff()">Добавить тариф</button>
+            </div>
+        </div>
 
-    <div class="footer">
-        Telegram канал NC - <a href="https://t.me/newchapterjob" target="_blank">@newchapterjob</a><br><br>
-        Бот для заработка - <a href="https://t.me/ncjobbot" target="_blank">@ncjobbot</a>
+        <!-- АДМИН: КОЛЕСО -->
+        <div id="view-admin-wheel" style="display: none;">
+            <div class="card">
+                <h3 style="margin-bottom: 15px; color: var(--promo);">Управление колесом</h3>
+                <button class="btn btn-danger" style="margin-bottom: 15px;" onclick="toggleWheelVisibility()">
+                    <span id="wheel-toggle-text">Отключить колесо</span>
+                </button>
+                <button class="btn" onclick="resetAllCooldowns()">Сбросить кулдаун всем</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -274,23 +262,36 @@
         tg.ready();
         tg.expand();
 
-        let state = {
-            balance: 250, 
-            nickname: localStorage.getItem('nc_vpn_nickname') || 'User_' + Math.floor(Math.random() * 9000 + 1000),
-            lastSpin: Number(localStorage.getItem('nc_vpn_lastSpin')) || 0,
-            topupHistory: JSON.parse(localStorage.getItem('nc_vpn_topup')) || [],
-            wheelHistory: JSON.parse(localStorage.getItem('nc_vpn_wheel')) || []
+        // ===== ИМИТАЦИЯ БАЗЫ ДАННЫХ =====
+        let appState = {
+            isAdmin: false,
+            user: {
+                balance: 250,
+                nickname: 'User_' + Math.floor(Math.random() * 9000 + 1000),
+                lastSpin: Number(localStorage.getItem('nc_vpn_lastSpin')) || 0,
+                wheelHistory: JSON.parse(localStorage.getItem('nc_vpn_wheel')) || []
+            },
+            // Список всех пользователей для админа
+            allUsers: [
+                { id: 123456, name: 'User_1234', balance: 250, blocked: false },
+                { id: 789012, name: 'Vasya_Pupkin', balance: 50, blocked: false },
+                { id: 111222, name: 'Spamer_99', balance: 0, blocked: true }
+            ],
+            // Тарифы (то, что видит юзер и правит админ)
+            tariffs: [
+                { id: 1, price: 186, desc: '1 Месяц на 1 устройство' },
+                { id: 2, price: 217, desc: '1 Месяц на 2 устройства' },
+                { id: 3, price: 350, desc: '3 Месяца на 4 устройства' },
+                { id: 4, price: 500, desc: '1 Год на 5 устройств' }
+            ],
+            // Состояние колеса
+            wheelEnabled: true
         };
 
         function closeWelcome() {
             document.getElementById('welcome-screen').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('welcome-screen').style.display = 'none';
-                if (tg.initDataUnsafe?.user) {
-                    tg.showAlert(`Привет, ${tg.initDataUnsafe.user.first_name}! Рады видеть тебя в NC VPN.`);
-                    document.getElementById('user-tg-name').textContent = tg.initDataUnsafe.user.first_name;
-                    document.getElementById('user-avatar').textContent = tg.initDataUnsafe.user.first_name.charAt(0);
-                }
                 updateUI();
             }, 500);
         }
@@ -301,15 +302,27 @@
         }
 
         function switchTab(tab) {
+            // Защита админских вкладок
+            const adminTabs = ['admin-users', 'admin-tariffs', 'admin-wheel', 'admin-panel'];
+            if (adminTabs.includes(tab) && !appState.isAdmin) {
+                return tg.showAlert('Доступ запрещен. Вы не админ.');
+            }
+
             document.querySelectorAll('.main-content > div').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            
             document.getElementById('view-' + tab).style.display = 'block';
             if(document.getElementById('tab-' + tab)) document.getElementById('tab-' + tab).classList.add('active');
             
-            const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', support: 'Поддержка', 'admin-login': 'Вход', 'admin-panel': 'Админка', connect: 'Подключение' };
+            const titles = { 
+                home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', 
+                support: 'Поддержка', 'admin-login': 'Вход', 'admin-users': 'Пользователи', 
+                'admin-tariffs': 'Редактор тарифов', 'admin-wheel': 'Управление колесом', connect: 'Подключение'
+            };
             document.getElementById('header-title').textContent = titles[tab];
 
-            if (tab === 'connect' || tab === 'admin-panel' || tab === 'admin-login') {
+            // Показ стрелки "Назад" в админке и подключении
+            if (tab === 'connect' || tab.includes('admin-')) {
                 document.getElementById('burger-btn').style.display = 'none';
                 document.getElementById('back-btn').style.display = 'block';
             } else {
@@ -318,127 +331,198 @@
             }
 
             if (document.getElementById('sidebar').classList.contains('open')) toggleMenu();
+            
+            // Обновляем данные при переходе на вкладки
+            if(tab === 'admin-users') renderAdminUsers();
+            if(tab === 'admin-tariffs') renderAdminTariffs();
+            if(tab === 'tariffs') renderUserTariffsList();
+            
             updateUI();
         }
 
-        // ===== ТАРИФЫ =====
-        const plans = [
-            { devices: 1, priceDay: 6, priceMonth: 186, promo: false },
-            { devices: 2, priceDay: 7, priceMonth: 217, promo: false },
-            { devices: 3, priceDay: 8, priceMonth: 248, promo: false },
-            { devices: 4, priceDay: 8, priceMonth: 248, promo: true, promoText: "Акция" },
-            { devices: 5, priceDay: 9, priceMonth: 279, promo: false }
-        ];
-        let selectedPlan = plans[0];
-
-        const container = document.getElementById('plans-container');
-        plans.forEach((plan, index) => {
-            const div = document.createElement('div');
-            div.className = `plan-btn ${index === 0 ? 'active' : ''}`;
-            div.id = `plan-${plan.devices}`;
-            div.onclick = () => {
-                selectedPlan = plan;
-                document.querySelectorAll('.plan-btn').forEach(el => el.classList.remove('active'));
-                div.classList.add('active');
-                updateUI();
-            };
-            div.innerHTML = `
-                ${plan.promo ? `<div class="promo-badge">${plan.promoText}</div>` : ''}
-                <div class="plan-devices">${plan.devices} устр.</div>
-                <div class="plan-price-day">${plan.priceDay} ₽ / день</div>
-            `;
-            container.appendChild(div);
-        });
-
-        // ===== UI =====
-        function updateUI() {
-            document.getElementById('home-balance').textContent = state.balance + ' ₽';
-            document.getElementById('profile-balance').textContent = state.balance + ' ₽';
-            document.getElementById('user-nickname').textContent = state.nickname;
-            
-            const days = Math.floor(state.balance / selectedPlan.priceDay);
-            document.getElementById('days-left').textContent = days + ' дней';
-
-            const topupList = document.getElementById('topup-history');
-            if (state.topupHistory.length === 0) topupList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
-            else topupList.innerHTML = state.topupHistory.map(item => `<li><span>${item.date}</span><b style="color:var(--success);">+${item.amount} ₽</b></li>`).join('');
-
-            const wheelList = document.getElementById('wheel-history');
-            if (state.wheelHistory.length === 0) wheelList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
-            else wheelList.innerHTML = state.wheelHistory.map(item => `<li><span>${item.date}</span><span>${item.prize}</span></li>`).join('');
-        }
-
-        function changeNickname() {
-            const newNick = window.prompt("Введите новый никнейм:", state.nickname);
-            if (newNick && newNick.trim() !== '') {
-                state.nickname = newNick.trim();
-                localStorage.setItem('nc_vpn_nickname', state.nickname);
-                updateUI();
+        // ===== АВТОРИЗАЦИЯ АДМИНА =====
+        function handleAdminAuthClick() {
+            if (appState.isAdmin) {
+                // Выход
+                appState.isAdmin = false;
+                document.getElementById('admin-menu').style.display = 'none';
+                document.getElementById('admin-auth-btn').innerHTML = '⚙️ Войти в АдмПрофиль';
+                switchTab('home');
+                tg.showAlert('Вы вышли из аккаунта администратора.');
+            } else {
+                switchTab('admin-login');
             }
-        }
-
-        // ===== ПОДДЕРЖКА И АДМИНКА =====
-        async function sendSupport() {
-            const subject = document.getElementById('support-subject').value;
-            const msg = document.getElementById('support-msg').value;
-            const tgId = tg.initDataUnsafe?.user?.id || 123;
-            if (!subject || !msg) return tg.showAlert('Заполните все поля!');
-
-            try {
-                const res = await fetch('/api/support', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: tgId, username: state.nickname, subject: subject, message: msg })
-                });
-                const data = await res.json();
-                if (data.ok) {
-                    tg.showAlert('Обращение отправлено!');
-                    document.getElementById('support-subject').value = '';
-                    document.getElementById('support-msg').value = '';
-                } else {
-                    tg.showAlert('Ошибка: ' + data.error);
-                }
-            } catch(e) { tg.showAlert('Ошибка сети'); }
         }
 
         function checkAdminLogin() {
             const login = document.getElementById('admin-login').value;
             const pass = document.getElementById('admin-pass').value;
-            // Временный пароль (потом заменим на генерацию из бота)
+            // Временный пароль (в будущем от бота)
             if (login === 'admin' && pass === 'admin') {
+                appState.isAdmin = true;
+                document.getElementById('admin-menu').style.display = 'block';
+                document.getElementById('admin-auth-btn').innerHTML = '🚪 Выйти из АдмПрофиль';
+                document.getElementById('admin-login').value = '';
+                document.getElementById('admin-pass').value = '';
+                
                 tg.showAlert('Успешный вход!');
-                switchTab('admin-panel');
+                switchTab('home'); // Перекидываем на главную
             } else {
                 tg.showAlert('Неверный логин или пароль!');
             }
         }
 
-        async function adminAddBalance() {
-            const targetId = document.getElementById('admin-user-id').value;
-            const amount = document.getElementById('admin-amount').value;
-            if (!targetId || !amount) return tg.showAlert('Заполните ID и сумму');
-            tg.showAlert(`Баланс пользователя ${targetId} пополнен на ${amount}₽ (Заглушка)`);
+        // ===== РЕНДЕР ТАРИФОВ =====
+        function renderUserTariffsList() {
+            const container = document.getElementById('user-tariffs-list');
+            container.innerHTML = appState.tariffs.map(t => `
+                <div class="card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 18px; font-weight: bold; color: var(--success);">${t.price} Rub</div>
+                        <div style="font-size: 13px; color: var(--text-muted); margin-top: 5px;">${t.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Рендер на главной (кратко)
+            const mainPlans = document.getElementById('user-plans-container');
+            mainPlans.innerHTML = appState.tariffs.map((t, i) => `
+                <div class="plan-btn ${i===0?'active':''}" onclick="selectMainPlan(this, ${t.price})">
+                    <div class="plan-devices">${t.price} ₽</div>
+                    <div class="plan-price-day" style="font-size:10px; margin-top:5px; color:var(--text-muted); line-height:1.2;">${t.desc}</div>
+                </div>
+            `).join('');
         }
 
-        function resetCooldownAll() {
-            tg.showConfirm('Вы уверены, что хотите сбросить кулдаун колеса ДЛЯ ВСЕХ пользователей?', (ok) => {
-                if (ok) {
-                    state.lastSpin = 0;
+        // ===== РЕНДЕР АДМИН: ПОЛЬЗОВАТЕЛИ =====
+        function renderAdminUsers() {
+            const list = document.getElementById('admin-users-list');
+            list.innerHTML = appState.allUsers.map((u, index) => `
+                <div class="user-row">
+                    <div>
+                        <div style="font-size:14px; font-weight:bold;">${u.name}</div>
+                        <div style="font-size:11px; color:var(--text-muted);">ID: ${u.id}</div>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <input type="number" id="user-bal-${index}" value="${u.balance}">
+                        <button class="btn" style="width:auto; padding:5px 10px; font-size:12px; margin-right:5px;" onclick="saveUserBalance(${index})">ОК</button>
+                        <button class="btn ${u.blocked ? 'btn-success' : 'btn-danger'}" style="width:auto; padding:5px 10px; font-size:12px;" onclick="toggleUserBlock(${index})">
+                            ${u.blocked ? 'Разблок' : 'Блок'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveUserBalance(index) {
+            const newBal = parseInt(document.getElementById(`user-bal-${index}`).value);
+            appState.allUsers[index].balance = newBal;
+            tg.showAlert('Баланс сохранен!');
+        }
+
+        function toggleUserBlock(index) {
+            appState.allUsers[index].blocked = !appState.allUsers[index].blocked;
+            renderAdminUsers();
+        }
+
+        // ===== РЕНДЕР АДМИН: ТАРИФЫ =====
+        function renderAdminTariffs() {
+            const list = document.getElementById('admin-tariffs-list');
+            list.innerHTML = appState.tariffs.map((t, index) => `
+                <div class="user-row" style="justify-content: flex-start;">
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; color:var(--success);">${t.price} Rub</div>
+                        <div style="font-size:12px; color:var(--text-muted);">${t.desc}</div>
+                    </div>
+                    <button class="btn btn-danger" style="width:auto; padding:5px 10px; font-size:12px;" onclick="deleteTariff(${index})">Удалить</button>
+                </div>
+            `).join('');
+        }
+
+        function addNewTariff() {
+            const price = document.getElementById('new-tariff-price').value;
+            const desc = document.getElementById('new-tariff-desc').value;
+            if(!price || !desc) return tg.showAlert('Заполните все поля!');
+            
+            appState.tariffs.push({ price: parseInt(price), desc: desc });
+            document.getElementById('new-tariff-price').value = '';
+            document.getElementById('new-tariff-desc').value = '';
+            
+            renderAdminTariffs();
+            renderUserTariffsList(); // Обновляем у юзера
+            tg.showAlert('Тариф добавлен!');
+        }
+
+        function deleteTariff(index) {
+            appState.tariffs.splice(index, 1);
+            renderAdminTariffs();
+            renderUserTariffsList();
+        }
+
+        // ===== АДМИН: КОЛЕСО =====
+        function toggleWheelVisibility() {
+            appState.wheelEnabled = !appState.wheelEnabled;
+            const btn = document.getElementById('wheel-toggle-text');
+            btn.textContent = appState.wheelEnabled ? 'Отключить колесо' : 'Включить колесо';
+            updateWheelState(); // Функция, которая накладывает заглушку
+            tg.showAlert(appState.wheelEnabled ? 'Колесо включено!' : 'Колесо выключено!');
+        }
+
+        function resetAllCooldowns() {
+            tg.showConfirm('Сбросить кулдаун колеса для ВСЕХ пользователей?', (ok) => {
+                if(ok) {
                     localStorage.setItem('nc_vpn_lastSpin', 0);
-                    tg.showAlert('Кулдаун сброшен для всех!');
+                    appState.user.lastSpin = 0;
                     updateCooldownUI();
+                    tg.showAlert('Кулдаун сброшен!');
                 }
             });
         }
 
-        // ===== КОЛЕСО =====
+        function updateWheelState() {
+            const wrapper = document.getElementById('wheel-wrapper');
+            let disabledOverlay = document.getElementById('wheel-disabled-overlay');
+            
+            if (!appState.wheelEnabled) {
+                if(!disabledOverlay) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'wheel-disabled-overlay';
+                    overlay.className = 'cooldown-overlay';
+                    overlay.innerHTML = '<div style="text-align:center; padding:20px; font-weight:bold; color:var(--danger);">Колесо Фортуны временно недоступно</div>';
+                    wrapper.appendChild(overlay);
+                }
+            } else {
+                if(disabledOverlay) disabledOverlay.remove();
+            }
+        }
+
+        // ===== БАЗОВЫЙ UI =====
+        function selectMainPlan(el, price) {
+            document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function updateUI() {
+            document.getElementById('home-balance').textContent = appState.user.balance + ' ₽';
+            document.getElementById('profile-balance').textContent = appState.user.balance + ' ₽';
+            document.getElementById('user-nickname').textContent = appState.user.nickname;
+            
+            // Дни (250 / 6 = 41)
+            document.getElementById('days-left').textContent = Math.floor(appState.user.balance / 6) + ' дней';
+
+            const wheelList = document.getElementById('wheel-history');
+            if (appState.user.wheelHistory.length === 0) wheelList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
+            else wheelList.innerHTML = appState.user.wheelHistory.map(item => `<li><span>${item.date}</span><span>${item.prize}</span></li>`).join('');
+        }
+
+        // ===== КОЛЕСО (Логика) =====
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
         const radius = 140;
-
-        // 27 слотов (12 lose, 8x6₽, 4x10₽, 2x50₽, 1x186₽) - Перемешано
+        
+        // 27 слотов
         const wheelItems = [
             { label: '186₽', color: '#ff3b30' }, { label: '0', color: '#555555' }, { label: '6₽', color: '#34c759' }, 
             { label: '0', color: '#555555' }, { label: '10₽', color: '#007aff' }, { label: '0', color: '#555555' }, 
@@ -469,28 +553,30 @@
         }
         drawWheel();
 
-        // Логика таймера
         let timerInterval;
         function updateCooldownUI() {
             const wrapper = document.getElementById('wheel-wrapper');
-            const existingOverlay = document.getElementById('cooldown-overlay');
+            let existingOverlay = document.getElementById('cooldown-overlay');
             const now = Date.now();
             const CD_7_DAYS = 7 * 24 * 60 * 60 * 1000;
-            const timeLeft = CD_7_DAYS - (now - state.lastSpin);
+            const timeLeft = CD_7_DAYS - (now - appState.user.lastSpin);
 
-            if (state.lastSpin > 0 && timeLeft > 0) {
+            if (!appState.wheelEnabled) return; // Если выключено, не показываем кулдаун
+
+            if (appState.user.lastSpin > 0 && timeLeft > 0) {
                 if (!existingOverlay) {
                     const overlay = document.createElement('div');
                     overlay.id = 'cooldown-overlay';
                     overlay.className = 'cooldown-overlay';
-                    overlay.innerHTML = '<div style="font-size:14px; color:var(--text-muted); margin-bottom:5px;">Следующее вращение через:</div><div id="cooldown-time" style="font-size:22px; font-weight:bold; color:var(--promo); font-family:monospace;">00:00:00</div>';
+                    overlay.innerHTML = '<div style="font-size:14px; color:var(--text-muted); margin-bottom:5px;">Кулдаун:</div><div id="cooldown-time" style="font-size:22px; font-weight:bold; color:var(--promo); font-family:monospace;">00:00:00</div>';
                     wrapper.appendChild(overlay);
                 }
                 
                 const h = Math.floor(timeLeft / (1000 * 60 * 60));
                 const m = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
                 const s = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                document.getElementById('cooldown-time').textContent = `${h}ч.${m.toString().padStart(2, '0')}м.${s.toString().padStart(2, '0')}с`;
+                const timeEl = document.getElementById('cooldown-time');
+                if(timeEl) timeEl.textContent = `${h}ч.${m.toString().padStart(2, '0')}м.${s.toString().padStart(2, '0')}с`;
                 
                 document.getElementById('spin-btn').disabled = true;
                 document.getElementById('spin-btn').textContent = 'Кулдаун';
@@ -500,15 +586,14 @@
                 document.getElementById('spin-btn').textContent = 'Крутить';
             }
         }
-        
-        // Запускаем таймер каждую секунду
         setInterval(updateCooldownUI, 1000);
 
         let currentRotation = 0;
         function spinWheel() {
+            if (!appState.wheelEnabled) return;
             const now = Date.now();
             const CD_7_DAYS = 7 * 24 * 60 * 60 * 1000;
-            if (state.lastSpin > 0 && now - state.lastSpin < CD_7_DAYS) return;
+            if (appState.user.lastSpin > 0 && now - appState.user.lastSpin < CD_7_DAYS) return;
 
             const btn = document.getElementById('spin-btn');
             btn.disabled = true; btn.textContent = 'Крутится...';
@@ -525,17 +610,17 @@
                 let msg = ''; let historyText = ''; const dateStr = new Date().toLocaleDateString();
 
                 if (prize.label === '0') {
-                    msg = 'Lose! В следующий раз повезет.'; historyText = 'Lose';
+                    msg = 'Lose!'; historyText = 'Lose';
                 } else if (prize.label === '186₽') {
-                    msg = '🏆 БЕЗЛИМИТ НА МЕСЯЦ!'; state.balance += 186; historyText = '+186 ₽';
+                    msg = '🏆 БЕЗЛИМИТ!'; appState.user.balance += 186; historyText = '+186 ₽';
                 } else {
-                    msg = `Вы выиграли ${prize.label}!`; state.balance += parseInt(prize.label); historyText = `+${prize.label}`;
+                    msg = `Выигрыш ${prize.label}!`; appState.user.balance += parseInt(prize.label); historyText = `+${prize.label}`;
                 }
 
-                state.lastSpin = now;
-                state.wheelHistory.unshift({ date: dateStr, prize: historyText });
-                localStorage.setItem('nc_vpn_lastSpin', state.lastSpin);
-                localStorage.setItem('nc_vpn_wheel', JSON.stringify(state.wheelHistory));
+                appState.user.lastSpin = now;
+                appState.user.wheelHistory.unshift({ date: dateStr, prize: historyText });
+                localStorage.setItem('nc_vpn_lastSpin', appState.user.lastSpin);
+                localStorage.setItem('nc_vpn_wheel', JSON.stringify(appState.user.wheelHistory));
 
                 tg.showAlert(msg);
                 updateUI();
@@ -543,8 +628,12 @@
             }, 4000);
         }
 
+        // Инициализация
+        renderUserTariffsList();
         updateUI();
         updateCooldownUI();
+        updateWheelState();
+
     </script>
 </body>
 </html>
