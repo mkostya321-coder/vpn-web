@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
 aiohttp
-sqlalchemy
+sqlalchemy[asyncio]
 aiosqlite
 apscheduler
