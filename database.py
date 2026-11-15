@@ -1,8 +1,12 @@
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from datetime import datetime
 
-# Путь к файлу базы данных в постоянном хранилище Amvera
+# Автоматически создаем папку /data при старте, если её нет
+if not os.path.exists("/data"):
+    os.makedirs("/data")
+
 DATABASE_URL = "sqlite+aiosqlite:////data/vpn_users.db"
 
 engine = create_async_engine(DATABASE_URL, echo=False)
@@ -24,12 +28,10 @@ class User(Base):
     active_fixed_expires: Mapped[datetime] = mapped_column(nullable=True)
     last_spin: Mapped[datetime] = mapped_column(nullable=True)
 
-# Функция для создания таблиц при запуске
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-# Зависимость для получения сессии БД в эндпоинтах FastAPI
 async def get_db():
     async with async_session() as session:
         yield session
