@@ -4,7 +4,8 @@ from fastapi import FastAPI, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from sqlalchemy import select, delete
+# ДОБАВЛЕН update !!!
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from contextlib import asynccontextmanager
@@ -157,8 +158,6 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
 async def gamble(data: GambleRequest, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
     if user:
-        # Если выиграл гэмбл, баланс не трогаем, так как мы начислим x2 на фронте
-        # Но если он проиграл, мы должны вычесть первоначальный выигрыш (который уже был зачислен)
         if not data.won_gamble:
             user.balance -= data.original_win
         await db.commit()
@@ -205,6 +204,7 @@ async def delete_wheel_item(id: int, db: AsyncSession = Depends(get_db)):
 @app.post("/api/wheel_items/order")
 async def update_wheel_order(data: WheelOrderUpdate, db: AsyncSession = Depends(get_db)):
     for idx, item_id in enumerate(data.items):
+        # ВОТ ЗДЕСЬ ТЕПЕРЬ РАБОТАЕТ UPDATE
         await db.execute(update(WheelItem).where(WheelItem.id == item_id).values(order=idx))
     await db.commit()
     return {"ok": True}
@@ -224,7 +224,6 @@ async def send_support(req: SupportRequest):
 
     text = f"🆘 Обращение в поддержку!\n\n👤 От: {req.username} (ID: {req.user_id})\n📌 Тема: {req.subject}\n\n💬 Сообщение:\n{req.message}"
     
-    # УБРАН parse_mode="Markdown", чтобы не было ошибки парсинга
     payload = {"chat_id": CHAT_ID, "text": text}
     
     if TOPIC_ID and TOPIC_ID.strip() != "":
