@@ -8,12 +8,18 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <title>NC VPN</title>
     <style>
-        /* ... CSS без изменений, добавлены стили для GAMBLE модалки ... */
-        :root { --bg: #0f0f0f; --card-bg: rgba(28, 28, 30, 0.85); --text: #ffffff; --text-muted: #8e8e93; --accent: #007aff; --success: #34c759; --promo: #ff9500; --danger: #ff3b30; --border: #3a3a3c; }
+        :root {
+            --bg: #0f0f0f; --card-bg: rgba(28, 28, 30, 0.85); --text: #ffffff; --text-muted: #8e8e93;
+            --accent: #007aff; --success: #34c759; --promo: #ff9500; --danger: #ff3b30; --border: #3a3a3c;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { background: linear-gradient(-45deg, #000000, #1c1c1e, #2c2c2e, #000000); background-size: 400% 400%; animation: gradientBG 12s ease infinite; color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        body { 
+            background: linear-gradient(-45deg, #000000, #1c1c1e, #2c2c2e, #000000);
+            background-size: 400% 400%; animation: gradientBG 12s ease infinite;
+            color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; 
+        }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        
+
         #welcome-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; transition: opacity 0.5s; }
         .logo-text { font-size: 40px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(90deg, #007aff, #00c6ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
         .welcome-subtitle { font-size: 18px; color: var(--text); margin-bottom: 30px; }
@@ -69,14 +75,20 @@
         .history-list li:last-child { border-bottom: none; }
 
         /* Стили для модалки гэмбла */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal.open { display: flex; }
-        .modal-content { background: var(--card-bg); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; text-align: center; }
+        .modal-content { background: var(--card-bg); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--border); }
         
-        .gamble-bar-container { display: flex; width: 100%; height: 40px; background: #333; border-radius: 10px; overflow: hidden; margin: 20px 0; position: relative; }
-        .gamble-zone-red { width: 50%; height: 100%; background: var(--danger); }
-        .gamble-zone-grey { width: 50%; height: 100%; background: #555; }
-        .gamble-indicator { position: absolute; top: -10px; left: 0; font-size: 24px; transition: left 3s cubic-bezier(0.25, 1, 0.5, 1); }
+        /* Колесо Апгрейда */
+        .upgrade-wheel-wrapper { position: relative; width: 200px; height: 200px; margin: 30px auto; }
+        .upgrade-wheel-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#ff3b30 0deg 180deg, #555555 180deg 360deg); border: 4px solid #1c1c1e; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+        .upgrade-needle { position: absolute; top: -15px; left: 50%; transform-origin: 50% 115px; transform: translateX(-50%) rotate(0deg); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+        
+        /* Надписи вокруг колеса */
+        .label-100 { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 16px; color: #fff; }
+        .label-50-left { position: absolute; top: 50%; left: -30px; transform: translateY(-50%); font-weight: bold; font-size: 14px; color: #fff; }
+        .label-50-right { position: absolute; top: 50%; right: -30px; transform: translateY(-50%); font-weight: bold; font-size: 14px; color: #fff; }
+        .label-0 { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 16px; color: #fff; }
 
         .footer { padding: 20px; text-align: center; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: auto; }
         .footer a { color: var(--accent); text-decoration: none; font-weight: bold; }
@@ -90,32 +102,33 @@
         <button class="btn-main" onclick="closeWelcome()">Продолжить</button>
     </div>
 
-    <!-- МОДАЛКА: АПГРЕЙД ВЫИГРЫША -->
+    <!-- МОДАЛКА 1: ХОТИТЕ УЛУЧШИТЬ? -->
     <div class="modal" id="gamble-modal">
         <div class="modal-content">
             <h2 style="color: var(--promo); margin-bottom: 10px;">Хотите улучшить выигрыш?</h2>
             <p style="margin-bottom: 20px;">Ваш приз: <b id="win-amount" style="color: var(--success); font-size: 20px;">0 ₽</b></p>
             <button class="btn btn-success" style="margin-bottom: 10px;" onclick="startGamble()">Улучшить (x2)</button>
-            <button class="btn btn-danger" onclick="claimWin()">Забрать</button>
+            <button class="btn btn-danger" onclick="claimWin()">Забрать деньги</button>
         </div>
     </div>
 
-    <!-- МОДАЛКА: ИГРА В ГЭМБЛ -->
+    <!-- МОДАЛКА 2: ИГРА В ГЭМБЛ (КОЛЕСО) -->
     <div class="modal" id="gamble-game-modal">
         <div class="modal-content">
-            <h3 style="margin-bottom: 10px;">Проверка удачи!</h3>
-            <p style="font-size: 12px; color: var(--text-muted);">Если попадешь в красное (50-100%) — приз удвоится. В серое — потеряешь всё.</p>
-            <div style="position:relative; margin-top: 30px;">
-                <span style="position: absolute; top: -25px; left: 0;">0%</span>
-                <span style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%);">50%</span>
-                <span style="position: absolute; top: -25px; right: 0;">100%</span>
+            <h3 style="margin-bottom: 5px;" id="upgrade-title">Апгрейд x2</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Попади в красную зону, чтобы удвоить!</p>
+            
+            <div class="upgrade-wheel-wrapper">
+                <div class="upgrade-wheel-bg"></div>
+                <div class="upgrade-needle" id="gamble-needle">▼</div>
                 
-                <div class="gamble-bar-container">
-                    <div class="gamble-zone-red"></div>
-                    <div class="gamble-zone-grey"></div>
-                </div>
+                <div class="label-100">100%</div>
+                <div class="label-50-left">50%</div>
+                <div class="label-50-right">50%</div>
+                <div class="label-0">0%</div>
             </div>
-            <button class="btn" id="gamble-spin-btn" onclick="runGamble()">Испытать удачу</button>
+
+            <button class="btn" id="gamble-spin-btn" style="margin-top: 20px;" onclick="runGamble()">Крутить</button>
         </div>
     </div>
 
@@ -181,7 +194,7 @@
             </div>
         </div>
 
-        <!-- КОЛЕСО -->
+        <!-- КОЛЕСО ФОРТУНЫ -->
         <div id="view-wheel" style="display: none;">
             <div class="card">
                 <h3 style="text-align: center;">Колесо Фортуны</h3>
@@ -217,7 +230,7 @@
             </div>
         </div>
 
-        <!-- ПОДКЛЮЧЕНИЕ, ТАРИФЫ, ПОДДЕРЖКА ... -->
+        <!-- ПОДКЛЮЧЕНИЕ -->
         <div id="view-connect" style="display: none;">
             <h2 style="text-align: center; margin-bottom: 20px;">Настройка VPN</h2>
             <div class="card">
@@ -227,6 +240,7 @@
             </div>
         </div>
         
+        <!-- ПОДДЕРЖКА -->
         <div id="view-support" style="display: none;">
             <div class="card">
                 <h3 style="margin-bottom: 10px;">Связь с поддержкой</h3>
@@ -236,6 +250,7 @@
             </div>
         </div>
 
+        <!-- ТАРИФЫ -->
         <div id="view-tariffs" style="display: none;">
             <h3 style="margin-bottom: 15px;">Фиксированные тарифы</h3>
             <div id="user-tariffs-list">Загрузка...</div>
@@ -327,14 +342,17 @@
             ],
             wheelEnabled: true,
             wheelItems: [],
-            currentPendingWin: 0 // Для гэмбла
+            
+            // Переменные для Апгрейда (Гэмбла)
+            currentPendingWin: 0,
+            upgradeLevel: 0,
+            isGambling: false
         };
 
         document.getElementById('welcome-message').innerHTML = `Привет, <b>${appState.user.nickname}</b>!<br>Рады видеть тебя в NC VPN.`;
 
         async function loadInitialData() {
             try {
-                // Юзер
                 await fetch('/api/user/sync', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: appState.user.tg_id, username: appState.user.tg_username, nickname: appState.user.nickname })
@@ -346,12 +364,10 @@
                     appState.user.activeFixed = dataUser.user.active_fixed_expires ? { expires: new Date(dataUser.user.active_fixed_expires).getTime(), desc: dataUser.user.active_fixed_desc } : null;
                 }
 
-                // Тарифы
                 const resTariffs = await fetch('/api/tariffs');
                 const dataTariffs = await resTariffs.json();
                 if(dataTariffs.ok) appState.tariffs = dataTariffs.tariffs;
 
-                // Сектора колеса
                 const resWheel = await fetch('/api/wheel_items');
                 const dataWheel = await resWheel.json();
                 if(dataWheel.ok) appState.wheelItems = dataWheel.items;
@@ -591,8 +607,6 @@
         function renderAdminUsers() {
             const search = (document.getElementById('admin-search-user')?.value || '').toLowerCase();
             const list = document.getElementById('admin-users-list');
-            
-            // Поиск по username
             const filtered = appState.allUsers.filter(u => u.username && u.username.toLowerCase().includes(search));
             
             list.innerHTML = filtered.length === 0 ? '<div style="text-align: center;">Никого не найдено</div>' : filtered.map((u) => `
@@ -630,7 +644,6 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ price: parseInt(price), desc, days: parseInt(days), devices: parseInt(devices) })
             });
-            // Перезагружаем тарифы
             const res = await fetch('/api/tariffs');
             const data = await res.json();
             appState.tariffs = data.tariffs;
@@ -655,19 +668,16 @@
                 </div>
             `).join('');
 
-            // Инициализация Drag-and-Drop
             new Sortable(list, {
                 animation: 150,
                 ghostClass: 'sortable-ghost',
                 onEnd: async function (evt) {
                     const itemEls = list.querySelectorAll('.wheel-item-row');
                     const newOrderIds = Array.from(itemEls).map(el => parseInt(el.getAttribute('data-id')));
-                    // Отправляем новый порядок на сервер
                     await fetch('/api/wheel_items/order', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ items: newOrderIds })
                     });
-                    // Перезагружаем сектора
                     const res = await fetch('/api/wheel_items');
                     const data = await res.json();
                     appState.wheelItems = data.items;
@@ -738,7 +748,7 @@
             }
         }
 
-        // --- КОЛЕСО ---
+        // --- КОЛЕСО ФОРТУНЫ ---
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const centerX = canvas.width / 2, centerY = canvas.height / 2, radius = 140;
@@ -818,6 +828,7 @@
 
                 if (prize.value > 0) {
                     appState.currentPendingWin = prize.value;
+                    appState.upgradeLevel = 0; // Сбрасываем уровень
                     document.getElementById('win-amount').textContent = prize.value + ' ₽';
                     document.getElementById('gamble-modal').classList.add('open');
                 } else {
@@ -828,72 +839,106 @@
             }, 7000);
         }
 
-        // --- ГЭМБЛ ЛОГИКА ---
+        // --- АПГРЕЙД (ГЭМБЛ) ЛОГИКА ---
         function claimWin() {
             document.getElementById('gamble-modal').classList.remove('open');
-            // Начисляем выигрыш
+            document.getElementById('gamble-game-modal').classList.remove('open');
+            
+            // Начисляем текущий приз
             fetch('/api/wheel/spin', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: appState.currentPendingWin, prize_label: `+${appState.currentPendingWin}₽` })
             });
             appState.user.balance += appState.currentPendingWin;
-            recordWheelToHistory(`+${appState.currentPendingWin}₽`);
+            recordWheelToHistory(`+${appState.currentPendingWin}₽ (Забрал)`);
+            
+            appState.currentPendingWin = 0;
+            appState.upgradeLevel = 0;
+            appState.isGambling = false;
+            document.getElementById('spin-btn').textContent = 'Крутить';
             updateUI();
         }
 
         function startGamble() {
+            if (appState.upgradeLevel >= 10) {
+                return tg.showAlert("Вы достигли максимального уровня апгрейда (x1024)! Забирайте приз.");
+            }
+            appState.isGambling = true;
             document.getElementById('gamble-modal').classList.remove('open');
             document.getElementById('gamble-game-modal').classList.add('open');
+            
+            // Настраиваем UI для колеса апгрейда
+            const nextMultiplier = Math.pow(2, appState.upgradeLevel + 1);
+            document.getElementById('upgrade-title').textContent = `Апгрейд x${nextMultiplier}`;
+            
+            const needle = document.getElementById('gamble-needle');
+            needle.style.transition = 'none';
+            needle.style.transform = `translateX(-50%) rotate(0deg)`;
+            
             document.getElementById('gamble-spin-btn').disabled = false;
-            document.getElementById('gamble-spin-btn').textContent = 'Испытать удачу';
+            document.getElementById('gamble-spin-btn').textContent = 'Крутить';
         }
 
         function runGamble() {
+            if (!appState.isGambling) return;
             const btn = document.getElementById('gamble-spin-btn');
             btn.disabled = true; btn.textContent = 'Крутим...';
 
-            const winChance = Math.random() > 0.5; // 50/50
-            const finalPercentage = winChance ? (50 + Math.random() * 50) : (Math.random() * 50);
+            // ЧЕСТНЫЙ РАНДОМ (50 на 50)
+            const win = Math.random() > 0.5;
             
-            // Анимация ползунка (просто для визуала)
-            const bar = document.querySelector('.gamble-indicator');
-            if(!bar) {
-                const newBar = document.createElement('div');
-                newBar.className = 'gamble-indicator';
-                newBar.innerHTML = '▼';
-                document.querySelector('.gamble-bar-container').appendChild(newBar);
+            // Генерируем угол. 0-180 (верхняя половина) = Победа. 180-360 (нижняя) = Проигрыш.
+            // 0 град - это верх. Стрелка должна указать в случайную точку в нужной зоне.
+            let targetAngle = 0;
+            if (win) {
+                targetAngle = Math.floor(Math.random() * 170) + 5; // От 5 до 175 градусов
+            } else {
+                targetAngle = Math.floor(Math.random() * 170) + 185; // От 185 до 355 градусов
             }
-            const indicator = document.querySelector('.gamble-indicator');
-            indicator.style.left = `calc(${finalPercentage}% - 12px)`;
+            
+            // Добавляем 5 полных оборотов для красоты
+            targetAngle += 360 * 5;
 
-            setTimeout(async () => {
-                document.getElementById('gamble-game-modal').classList.remove('open');
-                
-                if (winChance) {
-                    tg.showAlert('Победа! Выигрыш удвоен!');
-                    const doubleWin = appState.currentPendingWin * 2;
-                    await fetch('/api/wheel/spin', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: doubleWin, prize_label: `+${doubleWin}₽ (x2)` })
-                    });
-                    appState.user.balance += doubleWin;
-                    recordWheelToHistory(`+${doubleWin}₽ (x2)`);
+            const needle = document.getElementById('gamble-needle');
+            needle.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.2, 1)';
+            needle.style.transform = `translateX(-50%) rotate(${targetAngle}deg)`;
+
+            setTimeout(() => {
+                if (win) {
+                    appState.currentPendingWin *= 2;
+                    appState.upgradeLevel++;
+                    document.getElementById('win-amount').textContent = appState.currentPendingWin + ' ₽';
+                    
+                    tg.showAlert(`🎉 ПОБЕДА! Ваш приз увеличен до ${appState.currentPendingWin} ₽!`);
+                    document.getElementById('gamble-game-modal').classList.remove('open');
+                    
+                    if (appState.upgradeLevel >= 10) {
+                        tg.showAlert(`🏆 Невероятно! Вы достигли максимального апгрейда (x1024)! Забирайте ${appState.currentPendingWin} ₽!`);
+                        claimWin();
+                    } else {
+                        // Даем шанс апгрейдить еще раз
+                        document.getElementById('gamble-modal').classList.add('open');
+                    }
                 } else {
-                    tg.showAlert('Увы! Вы потеряли выигрыш.');
-                    // Выигрыш не начисляем
+                    tg.showAlert('💀 К сожалению, фортуна отвернулась от вас. Вы потеряли этот выигрыш. В следующий раз обязательно повезёт!');
+                    document.getElementById('gamble-game-modal').classList.remove('open');
+                    
+                    appState.currentPendingWin = 0;
+                    appState.upgradeLevel = 0;
+                    appState.isGambling = false;
+                    document.getElementById('spin-btn').textContent = 'Крутить';
                     recordWheelToHistory('Lose (Гэмбл)');
+                    updateUI();
                 }
-                
-                appState.currentPendingWin = 0;
-                document.getElementById('spin-btn').textContent = 'Крутить';
-                updateUI();
-            }, 3000);
+                btn.disabled = false; btn.textContent = 'Крутить';
+            }, 4000);
         }
 
         function recordWheelToHistory(text) {
             const dateStr = new Date().toLocaleDateString();
             appState.user.wheelHistory.unshift({ date: dateStr, prize: text });
             localStorage.setItem('nc_vpn_wheel_history', JSON.stringify(appState.user.wheelHistory));
+            updateUI();
         }
 
         // Инициализация
