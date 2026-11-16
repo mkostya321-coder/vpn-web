@@ -4,22 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Библиотека для перетаскивания -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <title>NC VPN</title>
     <style>
-        :root {
-            --bg: #0f0f0f; --card-bg: rgba(28, 28, 30, 0.85); --text: #ffffff; --text-muted: #8e8e93;
-            --accent: #007aff; --success: #34c759; --promo: #ff9500; --danger: #ff3b30; --border: #3a3a3c;
-        }
+        :root { --bg: #0f0f0f; --card-bg: rgba(28, 28, 30, 0.85); --text: #ffffff; --text-muted: #8e8e93; --accent: #007aff; --success: #34c759; --promo: #ff9500; --danger: #ff3b30; --border: #3a3a3c; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { 
-            background: linear-gradient(-45deg, #000000, #1c1c1e, #2c2c2e, #000000);
-            background-size: 400% 400%; animation: gradientBG 12s ease infinite;
-            color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; 
-        }
+        body { background: linear-gradient(-45deg, #000000, #1c1c1e, #2c2c2e, #000000); background-size: 400% 400%; animation: gradientBG 12s ease infinite; color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
+        
         #welcome-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; transition: opacity 0.5s; }
         .logo-text { font-size: 40px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(90deg, #007aff, #00c6ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
         .welcome-subtitle { font-size: 18px; color: var(--text); margin-bottom: 30px; }
@@ -64,8 +56,9 @@
         .cooldown-overlay { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: rgba(0,0,0,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 20; border: 2px solid var(--border); }
         
         input, textarea { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
-        .user-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
-        .user-row input { width: 80px; margin: 0 10px; padding: 5px; text-align: center; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid transparent; }
+        .user-row:hover { border-color: var(--accent); }
+        .user-row.blocked { opacity: 0.6; border-left: 4px solid var(--danger); }
         
         .wheel-item-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #ccc; cursor: grab; }
         .wheel-item-row:active { cursor: grabbing; }
@@ -74,17 +67,13 @@
         .history-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
         .history-list li:last-child { border-bottom: none; }
 
-        /* Стили для модалки гэмбла */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal.open { display: flex; }
         .modal-content { background: var(--card-bg); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--border); }
         
-        /* Колесо Апгрейда */
         .upgrade-wheel-wrapper { position: relative; width: 200px; height: 200px; margin: 30px auto; }
         .upgrade-wheel-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#ff3b30 0deg 180deg, #555555 180deg 360deg); border: 4px solid #1c1c1e; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
         .upgrade-needle { position: absolute; top: -15px; left: 50%; transform-origin: 50% 115px; transform: translateX(-50%) rotate(0deg); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
-        
-        /* Надписи вокруг колеса */
         .label-100 { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 16px; color: #fff; }
         .label-50-left { position: absolute; top: 50%; left: -30px; transform: translateY(-50%); font-weight: bold; font-size: 14px; color: #fff; }
         .label-50-right { position: absolute; top: 50%; right: -30px; transform: translateY(-50%); font-weight: bold; font-size: 14px; color: #fff; }
@@ -102,7 +91,6 @@
         <button class="btn-main" onclick="closeWelcome()">Продолжить</button>
     </div>
 
-    <!-- МОДАЛКА 1: ХОТИТЕ УЛУЧШИТЬ? -->
     <div class="modal" id="gamble-modal">
         <div class="modal-content">
             <h2 style="color: var(--promo); margin-bottom: 10px;">Хотите улучшить выигрыш?</h2>
@@ -112,22 +100,18 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА 2: ИГРА В ГЭМБЛ (КОЛЕСО) -->
     <div class="modal" id="gamble-game-modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 5px;" id="upgrade-title">Апгрейд x2</h3>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Попади в красную зону, чтобы удвоить!</p>
-            
             <div class="upgrade-wheel-wrapper">
                 <div class="upgrade-wheel-bg"></div>
                 <div class="upgrade-needle" id="gamble-needle">▼</div>
-                
                 <div class="label-100">100%</div>
                 <div class="label-50-left">50%</div>
                 <div class="label-50-right">50%</div>
                 <div class="label-0">0%</div>
             </div>
-
             <button class="btn" id="gamble-spin-btn" style="margin-top: 20px;" onclick="runGamble()">Крутить</button>
         </div>
     </div>
@@ -172,10 +156,12 @@
                 <button class="btn" style="width: auto;" onclick="topUpBalance()">+ Пополнить</button>
             </div>
 
+            <!-- Активный фикс-тариф -->
             <div class="card" id="active-fixed-card" style="display: none; border-color: var(--success); background: rgba(52, 199, 89, 0.1);">
                 <div style="font-size: 14px; color: var(--success); font-weight: bold; margin-bottom: 5px;">У вас активен пакетный тариф!</div>
-                <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;" id="fixed-name">3 Месяца на 4 устройства</div>
-                <div style="font-size: 13px; color: var(--text-muted);">Осталось дней: <span id="fixed-days" style="color:var(--text); font-weight:bold;">0</span></div>
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;" id="fixed-name">...</div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Осталось дней: <span id="fixed-days" style="color:var(--text); font-weight:bold;">0</span></div>
+                <button class="btn btn-danger" style="width: auto; padding: 8px 15px; font-size: 14px;" onclick="cancelTariff()">Отменить тариф</button>
             </div>
 
             <div id="daily-block">
@@ -190,11 +176,13 @@
                     <div class="plans-container" id="user-plans-container"></div>
                     <div class="scroll-arrow">❯</div>
                 </div>
-                <button class="btn" style="margin-top: 15px; padding: 15px;" onclick="connectVpn()">Подключить VPN</button>
             </div>
+
+            <!-- Кнопка подключения вынесена отдельно, она видна ВСЕГДА -->
+            <button class="btn" style="margin-top: 15px; padding: 15px;" onclick="connectVpn()">Подключить VPN</button>
         </div>
 
-        <!-- КОЛЕСО ФОРТУНЫ -->
+        <!-- КОЛЕСО -->
         <div id="view-wheel" style="display: none;">
             <div class="card">
                 <h3 style="text-align: center;">Колесо Фортуны</h3>
@@ -285,6 +273,7 @@
                 <input type="text" id="new-tariff-desc" placeholder="Описание (например: 3 Месяца на 4 устройства)">
                 <input type="number" id="new-tariff-days" placeholder="На сколько дней (например: 90)">
                 <input type="number" id="new-tariff-devices" placeholder="Кол-во устройств (например: 4)">
+                <input type="number" id="new-tariff-limit" placeholder="Лимит подписок (0 = безлимит)">
                 <button class="btn btn-success" onclick="addNewTariff()">Добавить</button>
             </div>
         </div>
@@ -324,9 +313,11 @@
                 tg_username: tg.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : '@no_username',
                 nickname: savedNickname || tgFirstName,
                 balance: 0, 
+                is_blocked: false,
                 selectedDevices: 1,
                 selectedPriceDay: 6,
                 activeFixed: null,
+                activeFixedDevices: 1,
                 lastSpin: Number(localStorage.getItem('nc_vpn_lastSpin')) || 0,
                 topupHistory: JSON.parse(localStorage.getItem('nc_vpn_topup_history')) || [],
                 wheelHistory: JSON.parse(localStorage.getItem('nc_vpn_wheel_history')) || []
@@ -342,8 +333,6 @@
             ],
             wheelEnabled: true,
             wheelItems: [],
-            
-            // Переменные для Апгрейда (Гэмбла)
             currentPendingWin: 0,
             upgradeLevel: 0,
             isGambling: false
@@ -361,7 +350,9 @@
                 const dataUser = await resUser.json();
                 if (dataUser.ok) {
                     appState.user.balance = dataUser.user.balance;
+                    appState.user.is_blocked = dataUser.user.is_blocked;
                     appState.user.activeFixed = dataUser.user.active_fixed_expires ? { expires: new Date(dataUser.user.active_fixed_expires).getTime(), desc: dataUser.user.active_fixed_desc } : null;
+                    appState.user.activeFixedDevices = dataUser.user.active_fixed_devices || 1;
                 }
 
                 const resTariffs = await fetch('/api/tariffs');
@@ -520,13 +511,19 @@
         }
 
         async function connectVpn() {
-            if (appState.user.balance <= 0) return tg.showAlert('Недостаточно средств!');
+            if (appState.user.is_blocked) return tg.showAlert('Ваш аккаунт заблокирован!');
+            
+            // Если есть активный купленный тариф, используем его устройства, иначе - выбранные ежедневные
+            const devicesToUse = (appState.user.activeFixed && appState.user.activeFixed.expires > Date.now()) 
+                                 ? appState.user.activeFixedDevices 
+                                 : appState.user.selectedDevices;
+
             switchTab('connect');
             document.getElementById('sub-link').textContent = 'Получение...';
             try {
                 const res = await fetch('/api/create-vpn', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegram_id: appState.user.tg_id, devices: appState.user.selectedDevices })
+                    body: JSON.stringify({ telegram_id: appState.user.tg_id, devices: devicesToUse })
                 });
                 const data = await res.json();
                 document.getElementById('sub-link').textContent = data.subscription_url || 'Ошибка';
@@ -560,12 +557,22 @@
 
         // --- ТАРИФЫ ---
         function renderUserTariffsList() {
-            document.getElementById('user-tariffs-list').innerHTML = appState.tariffs.map(t => `
-                <div class="card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <div><div style="font-size: 18px; font-weight: bold; color: var(--success);">${t.price} Rub</div><div style="font-size: 13px; color: var(--text-muted);">${t.desc}</div></div>
-                    <button class="btn" style="width: auto; padding: 10px;" onclick="buyFixedTariff(${t.id})">Купить</button>
+            document.getElementById('user-tariffs-list').innerHTML = appState.tariffs.map(t => {
+                const isSoldOut = t.limit_count > 0 && t.sold_count >= t.limit_count;
+                return `
+                <div class="card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; ${isSoldOut ? 'opacity: 0.6;' : ''}">
+                    <div>
+                        <div style="font-size: 18px; font-weight: bold; color: ${isSoldOut ? 'var(--text-muted)' : 'var(--success)'};">${t.price} Rub</div>
+                        <div style="font-size: 13px; color: var(--text-muted);">${t.desc}</div>
+                        ${t.limit_count > 0 ? `<div style="font-size: 11px; color: var(--promo); margin-top: 5px;">Осталось: ${t.limit_count - t.sold_count} из ${t.limit_count}</div>` : ''}
+                    </div>
+                    <button class="btn ${isSoldOut ? '' : 'btn-success'}" style="width: auto; padding: 10px;" 
+                        ${isSoldOut || appState.user.activeFixed ? 'disabled' : ''} 
+                        onclick="buyFixedTariff(${t.id})">
+                        ${isSoldOut ? 'Распродан' : 'Купить'}
+                    </button>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         async function buyFixedTariff(id) {
@@ -577,16 +584,35 @@
                 if (ok) {
                     const res = await fetch('/api/tariff/buy', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: appState.user.tg_id, price: tariff.price, desc: tariff.desc, days: tariff.days })
+                        body: JSON.stringify({ tg_id: appState.user.tg_id, tariff_id: id })
                     });
                     const data = await res.json();
                     if (data.ok) {
                         appState.user.balance = data.balance;
+                        // Обновляем локально
                         appState.user.activeFixed = { desc: tariff.desc, expires: Date.now() + (tariff.days * 86400000) };
+                        appState.user.activeFixedDevices = tariff.devices;
                         tg.showAlert('Куплено!');
                         switchTab('home');
                     } else { tg.showAlert(data.error); }
                 }
+            });
+        }
+
+        async function cancelTariff() {
+            tg.showConfirm('Вы уверены, что хотите отменить тариф? Мы вернем деньги за неиспользованные дни.', async (ok) => {
+                if (!ok) return;
+                const res = await fetch('/api/tariff/cancel', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: appState.user.tg_id })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    appState.user.balance = data.balance;
+                    appState.user.activeFixed = null;
+                    tg.showAlert(`Тариф отменен. Вам возвращено ${data.refund} ₽.`);
+                    switchTab('home');
+                } else { tg.showAlert(data.error); }
             });
         }
 
@@ -610,14 +636,32 @@
             const filtered = appState.allUsers.filter(u => u.username && u.username.toLowerCase().includes(search));
             
             list.innerHTML = filtered.length === 0 ? '<div style="text-align: center;">Никого не найдено</div>' : filtered.map((u) => `
-                <div class="user-row">
+                <div class="user-row ${u.is_blocked ? 'blocked' : ''}" onclick="editUser(${u.id}, ${u.balance}, ${u.is_blocked})">
                     <div>
-                        <div style="font-size:14px; font-weight:bold;">${u.username}</div>
+                        <div style="font-size:14px; font-weight:bold;">${u.username} ${u.is_blocked ? '(БАН)' : ''}</div>
                         <div style="font-size:11px; color:var(--text-muted);">${u.nickname} (ID: ${u.id})</div>
                     </div>
-                    <div><span style="color:var(--success); font-weight:bold;">${u.balance.toFixed(2)} ₽</span></div>
+                    <div><span style="color:${u.is_blocked ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${u.balance.toFixed(2)} ₽</span></div>
                 </div>
             `).join('');
+        }
+
+        function editUser(tgId, currentBal, isBlocked) {
+            const newBalStr = window.prompt(`Введите новый баланс для ID ${tgId}:`, currentBal);
+            if (newBalStr === null) return; // Отмена
+            
+            const newBal = parseFloat(newBalStr);
+            if (isNaN(newBal)) return tg.showAlert('Неверный формат суммы');
+
+            const blockAction = window.confirm(`Заблокировать пользователя?\n(Нажмите OK чтобы заблокировать, Отмена чтобы разблокировать)`);
+            
+            fetch('/api/admin/user_update', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: tgId, new_balance: newBal, is_blocked: blockAction })
+            }).then(() => {
+                tg.showAlert('Данные обновлены!');
+                fetchAdminUsers(); // Обновляем список
+            });
         }
 
         function renderAdminTariffs() {
@@ -626,7 +670,7 @@
                 <div class="user-row" style="justify-content: flex-start;">
                     <div style="flex:1;">
                         <div style="font-weight:bold; color:var(--success);">${t.price} Rub (${t.days} дн., ${t.devices} устр.)</div>
-                        <div style="font-size:12px; color:var(--text-muted);">${t.desc}</div>
+                        <div style="font-size:12px; color:var(--text-muted);">${t.desc} | Лимит: ${t.limit_count} | Продано: ${t.sold_count}</div>
                     </div>
                     <button class="btn btn-danger" style="width:auto; padding:5px 10px; font-size:12px;" onclick="deleteTariff(${t.id})">Удалить</button>
                 </div>
@@ -638,11 +682,13 @@
             const desc = document.getElementById('new-tariff-desc').value;
             const days = document.getElementById('new-tariff-days').value;
             const devices = document.getElementById('new-tariff-devices').value;
+            const limit = document.getElementById('new-tariff-limit').value || 0;
+            
             if(!price || !desc || !days || !devices) return tg.showAlert('Заполните все поля!');
             
             await fetch('/api/tariffs', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ price: parseInt(price), desc, days: parseInt(days), devices: parseInt(devices) })
+                body: JSON.stringify({ price: parseInt(price), desc, days: parseInt(days), devices: parseInt(devices), limit_count: parseInt(limit) })
             });
             const res = await fetch('/api/tariffs');
             const data = await res.json();
@@ -828,7 +874,7 @@
 
                 if (prize.value > 0) {
                     appState.currentPendingWin = prize.value;
-                    appState.upgradeLevel = 0; // Сбрасываем уровень
+                    appState.upgradeLevel = 0; 
                     document.getElementById('win-amount').textContent = prize.value + ' ₽';
                     document.getElementById('gamble-modal').classList.add('open');
                 } else {
@@ -844,7 +890,6 @@
             document.getElementById('gamble-modal').classList.remove('open');
             document.getElementById('gamble-game-modal').classList.remove('open');
             
-            // Начисляем текущий приз
             fetch('/api/wheel/spin', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: appState.currentPendingWin, prize_label: `+${appState.currentPendingWin}₽` })
@@ -867,7 +912,6 @@
             document.getElementById('gamble-modal').classList.remove('open');
             document.getElementById('gamble-game-modal').classList.add('open');
             
-            // Настраиваем UI для колеса апгрейда
             const nextMultiplier = Math.pow(2, appState.upgradeLevel + 1);
             document.getElementById('upgrade-title').textContent = `Апгрейд x${nextMultiplier}`;
             
@@ -884,19 +928,10 @@
             const btn = document.getElementById('gamble-spin-btn');
             btn.disabled = true; btn.textContent = 'Крутим...';
 
-            // ЧЕСТНЫЙ РАНДОМ (50 на 50)
             const win = Math.random() > 0.5;
-            
-            // Генерируем угол. 0-180 (верхняя половина) = Победа. 180-360 (нижняя) = Проигрыш.
-            // 0 град - это верх. Стрелка должна указать в случайную точку в нужной зоне.
             let targetAngle = 0;
-            if (win) {
-                targetAngle = Math.floor(Math.random() * 170) + 5; // От 5 до 175 градусов
-            } else {
-                targetAngle = Math.floor(Math.random() * 170) + 185; // От 185 до 355 градусов
-            }
-            
-            // Добавляем 5 полных оборотов для красоты
+            if (win) { targetAngle = Math.floor(Math.random() * 170) + 5; } 
+            else { targetAngle = Math.floor(Math.random() * 170) + 185; }
             targetAngle += 360 * 5;
 
             const needle = document.getElementById('gamble-needle');
@@ -916,7 +951,6 @@
                         tg.showAlert(`🏆 Невероятно! Вы достигли максимального апгрейда (x1024)! Забирайте ${appState.currentPendingWin} ₽!`);
                         claimWin();
                     } else {
-                        // Даем шанс апгрейдить еще раз
                         document.getElementById('gamble-modal').classList.add('open');
                     }
                 } else {
@@ -941,7 +975,6 @@
             updateUI();
         }
 
-        // Инициализация
         updateWheelState();
     </script>
 </body>
