@@ -21,10 +21,15 @@ class User(Base):
     username: Mapped[str] = mapped_column(nullable=True)
     nickname: Mapped[str] = mapped_column(default="User")
     balance: Mapped[float] = mapped_column(default=0.0)
+    is_blocked: Mapped[bool] = mapped_column(default=False) # НОВОЕ: Блокировка
     selected_devices: Mapped[int] = mapped_column(default=1)
     daily_price: Mapped[int] = mapped_column(default=6)
+    
+    # Данные о купленном пакете
     active_fixed_desc: Mapped[str] = mapped_column(nullable=True)
     active_fixed_expires: Mapped[datetime] = mapped_column(nullable=True)
+    active_fixed_devices: Mapped[int] = mapped_column(nullable=True) # НОВОЕ: Сколько устройств в купленном пакете
+    
     last_spin: Mapped[datetime] = mapped_column(nullable=True)
 
 class Tariff(Base):
@@ -34,6 +39,8 @@ class Tariff(Base):
     desc: Mapped[str]
     days: Mapped[int]
     devices: Mapped[int]
+    limit_count: Mapped[int] = mapped_column(default=0) # НОВОЕ: Лимит (0 = безлимит)
+    sold_count: Mapped[int] = mapped_column(default=0) # НОВОЕ: Сколько продано
 
 class WheelItem(Base):
     __tablename__ = "wheel_items"
@@ -47,13 +54,12 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
-        # Создаем базовые тарифы, если их нет
         from sqlalchemy import select
         async with async_session() as session:
             res = await session.execute(select(Tariff))
             if not res.scalars().first():
-                session.add(Tariff(price=350, desc='3 Месяца на 4 устройства', days=90, devices=4))
-                session.add(Tariff(price=500, desc='1 Год на 5 устройств', days=365, devices=5))
+                session.add(Tariff(price=350, desc='3 Месяца на 4 устройства', days=90, devices=4, limit_count=10))
+                session.add(Tariff(price=500, desc='1 Год на 5 устройств', days=365, devices=5, limit_count=5))
                 await session.commit()
                 
             res_wheel = await session.execute(select(WheelItem))
