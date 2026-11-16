@@ -4,7 +4,6 @@ from fastapi import FastAPI, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-# ДОБАВЛЕН update !!!
 from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -17,9 +16,10 @@ from database import init_db, get_db, User, Tariff, WheelItem, async_session
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 
 async def daily_charge():
-    print(f"[{datetime.now()}] Запуск ежедневного списания...")
+    print(f"[{datetime.now()}] Запуск ежедневных задач...")
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.balance > 0))
+        # 1. Списание за ежедневный тариф
+        result = await session.execute(select(User).where(User.balance > 0, User.is_blocked == False))
         users = result.scalars().all()
         for user in users:
             if user.active_fixed_expires and user.active_fixed_expires > datetime.now():
@@ -27,7 +27,11 @@ async def daily_charge():
             user.balance -= user.daily_price
             if user.balance < 0:
                 user.balance = 0
+
+        # 2. Сброс лимитов тарифов (в 00:00 МСК)
+        await session.execute(update(Tariff).values(sold_count=0))
         await session.commit()
+    print(f"[{datetime.now()}] Задачи завершены.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,11 +58,17 @@ class BalanceUpdate(BaseModel):
     tg_id: int
     amount: float
 
+class AdminUserUpdate(BaseModel):
+    tg_id: int
+    new_balance: float
+    is_blocked: bool
+
 class FixedTariffBuy(BaseModel):
     tg_id: int
-    price: float
-    desc: str
-    days: int
+    tariff_id: int
+
+class TariffCancel(BaseModel):
+    tg_id: int
 
 class SpinResult(BaseModel):
     tg_id: int
@@ -85,6 +95,7 @@ class TariffCreate(BaseModel):
     desc: str
     days: int
     devices: int
+    limit_count: int
 
 class WheelItemCreate(BaseModel):
     label: str
@@ -92,7 +103,7 @@ class WheelItemCreate(BaseModel):
     value: int
 
 class WheelOrderUpdate(BaseModel):
-    items: List[int] # Список ID в новом порядке
+    items: List[int]
 
 # --- ЭНДПОИНТЫ ---
 
@@ -115,16 +126,26 @@ async def get_user(tg_id: int, db: AsyncSession = Depends(get_db)):
         return {"ok": False, "error": "User not found"}
     return {"ok": True, "user": {
         "id": user.id, "username": user.username, "nickname": user.nickname,
-        "balance": user.balance, "selected_devices": user.selected_devices,
+        "balance": user.balance, "is_blocked": user.is_blocked, "selected_devices": user.selected_devices,
         "daily_price": user.daily_price, "active_fixed_desc": user.active_fixed_desc,
-        "active_fixed_expires": user.active_fixed_expires.isoformat() if user.active_fixed_expires else None
+        "active_fixed_expires": user.active_fixed_expires.isoformat() if user.active_fixed_expires else None,
+        "active_fixed_devices": user.active_fixed_devices
     }}
 
 @app.get("/api/users/all")
 async def get_all_users(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User))
     users = result.scalars().all()
-    return {"ok": True, "users": [{"id": u.id, "username": u.username, "nickname": u.nickname, "balance": u.balance, "daily_price": u.daily_price} for u in users]}
+    return {"ok": True, "users": [{"id": u.id, "username": u.username, "nickname": u.nickname, "balance": u.balance, "is_blocked": u.is_blocked} for u in users]}
+
+@app.post("/api/admin/user_update")
+async def admin_update_user(data: AdminUserUpdate, db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, data.tg_id)
+    if user:
+        user.balance = data.new_balance
+        user.is_blocked = data.is_blocked
+        await db.commit()
+    return {"ok": True}
 
 @app.post("/api/user/balance")
 async def update_balance(data: BalanceUpdate, db: AsyncSession = Depends(get_db)):
@@ -137,13 +158,69 @@ async def update_balance(data: BalanceUpdate, db: AsyncSession = Depends(get_db)
 @app.post("/api/tariff/buy")
 async def buy_tariff(data: FixedTariffBuy, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
-    if not user or user.balance < data.price:
-        return {"ok": False, "error": "Недостаточно средств"}
-    user.balance -= data.price
-    user.active_fixed_expires = datetime.now() + timedelta(days=data.days)
-    user.active_fixed_desc = data.desc
+    tariff = await db.get(Tariff, data.tariff_id)
+    
+    if not user or not tariff: return {"ok": False, "error": "Ошибка данных"}
+    if user.is_blocked: return {"ok": False, "error": "Вы заблокированы"}
+    if user.balance < tariff.price: return {"ok": False, "error": "Недостаточно средств"}
+    if tariff.limit_count > 0 and tariff.sold_count >= tariff.limit_count: return {"ok": False, "error": "Товар распродан"}
+
+    user.balance -= tariff.price
+    user.active_fixed_expires = datetime.now() + timedelta(days=tariff.days)
+    user.active_fixed_desc = tariff.desc
+    user.active_fixed_devices = tariff.devices
+    tariff.sold_count += 1
+    
     await db.commit()
     return {"ok": True, "balance": user.balance}
+
+@app.post("/api/tariff/cancel")
+async def cancel_tariff(data: TariffCancel, db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, data.tg_id)
+    if not user or not user.active_fixed_expires:
+        return {"ok": False, "error": "Нет активного тарифа"}
+    
+    # Ищем исходную цену тарифа по его описанию (упрощенно)
+    res = await db.execute(select(Tariff).where(Tariff.desc == user.active_fixed_desc))
+    tariff = res.scalars().first()
+    if not tariff:
+         return {"ok": False, "error": "Тариф не найден в базе"}
+
+    # Расчет возврата
+    now = datetime.now()
+    total_seconds = tariff.days * 24 * 60 * 60
+    left_seconds = (user.active_fixed_expires - now).total_seconds()
+    left_days = max(0, left_seconds / (24 * 60 * 60))
+    
+    price_per_day = tariff.price / tariff.days
+    refund = price_per_day * left_days
+    refund = round(refund, 1) # Округляем до одного знака (как в примере)
+
+    user.balance += refund
+    user.active_fixed_expires = None
+    user.active_fixed_desc = None
+    user.active_fixed_devices = None
+    
+    await db.commit()
+    return {"ok": True, "refund": refund, "balance": user.balance}
+
+@app.get("/api/tariffs")
+async def get_tariffs(db: AsyncSession = Depends(get_db)):
+    res = await db.execute(select(Tariff))
+    return {"ok": True, "tariffs": res.scalars().all()}
+
+@app.post("/api/tariffs")
+async def add_tariff(data: TariffCreate, db: AsyncSession = Depends(get_db)):
+    new_t = Tariff(price=data.price, desc=data.desc, days=data.days, devices=data.devices, limit_count=data.limit_count)
+    db.add(new_t)
+    await db.commit()
+    return {"ok": True}
+
+@app.delete("/api/tariffs/{id}")
+async def delete_tariff(id: int, db: AsyncSession = Depends(get_db)):
+    await db.execute(delete(Tariff).where(Tariff.id == id))
+    await db.commit()
+    return {"ok": True}
 
 @app.post("/api/wheel/spin")
 async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
@@ -157,28 +234,9 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
 @app.post("/api/wheel/gamble")
 async def gamble(data: GambleRequest, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
-    if user:
-        if not data.won_gamble:
-            user.balance -= data.original_win
+    if user and not data.won_gamble:
+        user.balance -= data.original_win
         await db.commit()
-    return {"ok": True}
-
-@app.get("/api/tariffs")
-async def get_tariffs(db: AsyncSession = Depends(get_db)):
-    res = await db.execute(select(Tariff))
-    return {"ok": True, "tariffs": res.scalars().all()}
-
-@app.post("/api/tariffs")
-async def add_tariff(data: TariffCreate, db: AsyncSession = Depends(get_db)):
-    new_t = Tariff(price=data.price, desc=data.desc, days=data.days, devices=data.devices)
-    db.add(new_t)
-    await db.commit()
-    return {"ok": True}
-
-@app.delete("/api/tariffs/{id}")
-async def delete_tariff(id: int, db: AsyncSession = Depends(get_db)):
-    await db.execute(delete(Tariff).where(Tariff.id == id))
-    await db.commit()
     return {"ok": True}
 
 @app.get("/api/wheel_items")
@@ -204,7 +262,6 @@ async def delete_wheel_item(id: int, db: AsyncSession = Depends(get_db)):
 @app.post("/api/wheel_items/order")
 async def update_wheel_order(data: WheelOrderUpdate, db: AsyncSession = Depends(get_db)):
     for idx, item_id in enumerate(data.items):
-        # ВОТ ЗДЕСЬ ТЕПЕРЬ РАБОТАЕТ UPDATE
         await db.execute(update(WheelItem).where(WheelItem.id == item_id).values(order=idx))
     await db.commit()
     return {"ok": True}
@@ -223,9 +280,7 @@ async def send_support(req: SupportRequest):
         return {"ok": False, "error": "Переменные не заданы"}
 
     text = f"🆘 Обращение в поддержку!\n\n👤 От: {req.username} (ID: {req.user_id})\n📌 Тема: {req.subject}\n\n💬 Сообщение:\n{req.message}"
-    
     payload = {"chat_id": CHAT_ID, "text": text}
-    
     if TOPIC_ID and TOPIC_ID.strip() != "":
         try: payload["message_thread_id"] = int(TOPIC_ID)
         except ValueError: pass
