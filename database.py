@@ -1,6 +1,7 @@
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import text
 from datetime import datetime
 
 if not os.path.exists("/data"):
@@ -17,19 +18,16 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True) # Telegram ID
+    id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(nullable=True)
     nickname: Mapped[str] = mapped_column(default="User")
     balance: Mapped[float] = mapped_column(default=0.0)
-    is_blocked: Mapped[bool] = mapped_column(default=False) # НОВОЕ: Блокировка
+    is_blocked: Mapped[bool] = mapped_column(default=False)
     selected_devices: Mapped[int] = mapped_column(default=1)
     daily_price: Mapped[int] = mapped_column(default=6)
-    
-    # Данные о купленном пакете
     active_fixed_desc: Mapped[str] = mapped_column(nullable=True)
     active_fixed_expires: Mapped[datetime] = mapped_column(nullable=True)
-    active_fixed_devices: Mapped[int] = mapped_column(nullable=True) # НОВОЕ: Сколько устройств в купленном пакете
-    
+    active_fixed_devices: Mapped[int] = mapped_column(nullable=True)
     last_spin: Mapped[datetime] = mapped_column(nullable=True)
 
 class Tariff(Base):
@@ -39,8 +37,8 @@ class Tariff(Base):
     desc: Mapped[str]
     days: Mapped[int]
     devices: Mapped[int]
-    limit_count: Mapped[int] = mapped_column(default=0) # НОВОЕ: Лимит (0 = безлимит)
-    sold_count: Mapped[int] = mapped_column(default=0) # НОВОЕ: Сколько продано
+    limit_count: Mapped[int] = mapped_column(default=0)
+    sold_count: Mapped[int] = mapped_column(default=0)
 
 class WheelItem(Base):
     __tablename__ = "wheel_items"
@@ -52,8 +50,30 @@ class WheelItem(Base):
 
 async def init_db():
     async with engine.begin() as conn:
+        # Создаем таблицы (если их нет)
         await conn.run_sync(Base.metadata.create_all)
         
+        # --- МИГРАЦИЯ: Проверяем и добавляем недостающие колонки ---
+        
+        # 1. Таблица Users
+        result = await conn.execute(text("PRAGMA table_info(users)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'is_blocked' not in columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN is_blocked BOOLEAN DEFAULT 0"))
+        if 'active_fixed_devices' not in columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN active_fixed_devices INTEGER"))
+            
+        # 2. Таблица Tariffs
+        result = await conn.execute(text("PRAGMA table_info(tariffs)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'limit_count' not in columns:
+            await conn.execute(text("ALTER TABLE tariffs ADD COLUMN limit_count INTEGER DEFAULT 0"))
+        if 'sold_count' not in columns:
+            await conn.execute(text("ALTER TABLE tariffs ADD COLUMN sold_count INTEGER DEFAULT 0"))
+            
+        print("Проверка базы данных завершена (все колонки на месте).")
+
+        # Заполняем базовыми данными, если таблицы пустые
         from sqlalchemy import select
         async with async_session() as session:
             res = await session.execute(select(Tariff))
