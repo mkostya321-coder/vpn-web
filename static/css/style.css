@@ -3,9 +3,12 @@
     --accent: #007aff; --success: #34c759; --promo: #ff9500; --danger: #ff3b30; --border: #3a3a3c;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+/* Переливающийся черно-белый фон */
 body { 
-    background: linear-gradient(-45deg, #000000, #1c1c1e, #2c2c2e, #000000);
-    background-size: 400% 400%; animation: gradientBG 12s ease infinite;
+    background: linear-gradient(-45deg, #000000, #2c2c2e, #8e8e93, #1c1c1e);
+    background-size: 300% 300%;
+    animation: gradientBG 10s ease infinite;
     color: var(--text); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; 
 }
 @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -48,15 +51,33 @@ body {
 .plan-devices { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
 .plan-price-day { font-size: 12px; color: var(--accent); font-weight: 600; }
 
+/* Фон для колеса фортуны */
+#view-wheel {
+    background-image: url('/static/img/gta6-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 16px;
+    margin: -15px;
+    padding: 15px;
+    min-height: 80vh;
+}
+
 .wheel-container { position: relative; text-align: center; margin: 20px 0; display: flex; justify-content: center; }
 .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 10; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
 canvas { transition: transform 7s cubic-bezier(0.1, 0.8, 0.2, 1); }
 .cooldown-overlay { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: rgba(0,0,0,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 20; border: 2px solid var(--border); }
 
-input, textarea { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
+input, textarea, select { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 10px; font-family: inherit; }
 .user-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid transparent; }
 .user-row:hover { border-color: var(--accent); }
 .user-row.blocked { opacity: 0.6; border-left: 4px solid var(--danger); }
+
+/* Выделение выбранного пользователя */
+.user-row.selected {
+    border-color: var(--accent);
+    background: rgba(0, 122, 255, 0.15);
+}
 
 .wheel-item-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #ccc; cursor: grab; }
 .wheel-item-row:active { cursor: grabbing; }
@@ -66,10 +87,17 @@ input, textarea { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); borde
 .history-list li:last-child { border-bottom: none; }
 
 .sub-link-box { background: #000; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin: 10px 0; border: 1px solid var(--border); color: var(--success); }
+.client-card { display: flex; align-items: center; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
+.client-icon { width: 40px; height: 40px; color: white; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: bold; margin-right: 15px; }
 
+/* Модалки */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
 .modal.open { display: flex; }
-.modal-content { background: var(--card-bg); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--border); }
+.modal-content { background: var(--card-bg); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--border); position: relative; }
+
+/* Крестик закрытия модалки */
+.modal-close { position: absolute; top: 15px; left: 15px; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+.modal-close:hover { color: var(--danger); }
 
 .upgrade-wheel-wrapper { position: relative; width: 200px; height: 200px; margin: 30px auto; }
 .upgrade-wheel-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#ff3b30 0deg 180deg, #555555 180deg 360deg); border: 4px solid #1c1c1e; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
