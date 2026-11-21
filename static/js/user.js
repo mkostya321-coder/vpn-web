@@ -32,10 +32,8 @@ async function topUpBalance() {
 
 async function connectVpn() {
     if (appState.user.is_blocked) return tg.showAlert('Ваш аккаунт заблокирован!');
-    
     const devicesToUse = (appState.user.activeFixed && appState.user.activeFixed.expires > Date.now()) 
-                         ? appState.user.activeFixedDevices 
-                         : appState.user.selectedDevices;
+                         ? appState.user.activeFixedDevices : appState.user.selectedDevices;
 
     switchTab('connect');
     document.getElementById('sub-link').textContent = 'Получение...';
