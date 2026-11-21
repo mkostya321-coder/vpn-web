@@ -14,22 +14,58 @@ function selectDailyPlan(devices, priceDay) {
     updateUI();
 }
 
-async function topUpBalance() {
-    const res = await fetch('/api/user/balance', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: appState.user.tg_id, amount: 100 })
-    });
-    const data = await res.json();
-    if(data.ok) {
-        appState.user.balance = data.balance;
-        const dateStr = new Date().toLocaleDateString();
-        appState.user.topupHistory.unshift({ date: dateStr, amount: 100 });
-        localStorage.setItem('nc_vpn_topup_history', JSON.stringify(appState.user.topupHistory));
-        updateUI();
-        tg.showAlert('Баланс пополнен на 100₽');
+// ===== ПОПОЛНЕНИЕ БАЛАНСА =====
+function topUpBalance() {
+    if (appState.user.is_blocked) return tg.showAlert('Ваш аккаунт заблокирован!');
+    document.getElementById('topup-amount-input').value = '';
+    document.getElementById('topup-modal').classList.add('open');
+}
+
+function closeTopupModal() {
+    document.getElementById('topup-modal').classList.remove('open');
+}
+
+function setTopupAmount(amount) {
+    document.getElementById('topup-amount-input').value = amount;
+}
+
+async function confirmTopup() {
+    const amount = parseFloat(document.getElementById('topup-amount-input').value);
+    
+    if (isNaN(amount) || amount <= 0) {
+        return tg.showAlert('Введите корректную сумму');
+    }
+    if (amount < 10) {
+        return tg.showAlert('Минимальная сумма пополнения — 10 ₽');
+    }
+    if (amount > 100000) {
+        return tg.showAlert('Максимальная сумма — 100 000 ₽');
+    }
+
+    closeTopupModal();
+
+    try {
+        const res = await fetch('/api/user/balance', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: appState.user.tg_id, amount: amount })
+        });
+        const data = await res.json();
+        if(data.ok) {
+            appState.user.balance = data.balance;
+            const dateStr = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString().slice(0,5);
+            appState.user.topupHistory.unshift({ date: dateStr, amount: amount });
+            localStorage.setItem('nc_vpn_topup_history', JSON.stringify(appState.user.topupHistory));
+            updateUI();
+            tg.showAlert(`✅ Баланс пополнен на ${amount} ₽`);
+        } else {
+            tg.showAlert('Ошибка: ' + (data.error || 'не удалось пополнить'));
+        }
+    } catch(e) {
+        tg.showAlert('Ошибка сети. Попробуйте ещё раз.');
     }
 }
 
+// ===== ПОДКЛЮЧЕНИЕ VPN =====
 async function connectVpn() {
     if (appState.user.is_blocked) return tg.showAlert('Ваш аккаунт заблокирован!');
     const devicesToUse = (appState.user.activeFixed && appState.user.activeFixed.expires > Date.now()) 
@@ -72,6 +108,7 @@ async function sendSupport() {
     } catch(e) { tg.showAlert('Ошибка сети'); }
 }
 
+// ===== ТАРИФЫ =====
 function renderUserTariffsList() {
     document.getElementById('user-tariffs-list').innerHTML = appState.tariffs.map(t => {
         const isSoldOut = t.limit_count > 0 && t.sold_count >= t.limit_count;
