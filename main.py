@@ -179,8 +179,12 @@ async def update_balance(data: BalanceUpdate, db: AsyncSession = Depends(get_db)
     if user:
         user.balance += data.amount
         await db.commit()
-        # Лог пополнения
-        await send_tg_log("LOG_TOPUP_CHAT_ID", f"💰 <b>Новое пополнение!</b>\n\n👤 {user.username}\n💵 +{data.amount} ₽")
+        # Лог пополнения (с поддержкой темы)
+        await send_tg_log(
+            "LOG_TOPUP_CHAT_ID", 
+            f"💰 <b>Новое пополнение!</b>\n\n👤 {user.username}\n💵 +{data.amount} ₽",
+            topic_env="LOG_TOPUP_TOPIC_ID"
+        )
     return {"ok": True, "balance": user.balance if user else 0}
 
 @app.post("/api/tariff/buy")
@@ -271,14 +275,15 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
         user.last_spin = datetime.now()
         
         if not data.is_other_prize:
-            # Обычный выигрыш (деньги)
+            # Обычный выигрыш (деньги) - с поддержкой темы
             user.balance += data.prize_value
             await send_tg_log(
                 "LOG_WHEEL_CHAT_ID", 
-                f"🎰 <b>Колесо удачи!</b>\n\n👤 {user.username}\n💰 Выигрыш: {data.prize_label}"
+                f"🎰 <b>Колесо удачи!</b>\n\n👤 {user.username}\n💰 Выигрыш: {data.prize_label}",
+                topic_env="LOG_WHEEL_TOPIC_ID"
             )
         else:
-            # Заявка на ручную выдачу (в отдельную беседу!)
+            # Заявка на ручную выдачу (в отдельную беседу с темой!)
             await send_tg_log(
                 "LOG_OTHER_CHAT_ID", 
                 f"🎁 <b>Заявка на выдачу приза!</b>\n\n👤 Пользователь: {user.username}\n🏆 Приз: {data.prize_label}\n\n<i>⚠️ Требуется ручная выдача в течение 48 часов.</i>",
