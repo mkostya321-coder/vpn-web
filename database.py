@@ -47,15 +47,13 @@ class WheelItem(Base):
     color: Mapped[str]
     value: Mapped[int]
     order: Mapped[int] = mapped_column(default=0)
+    prize_type: Mapped[str] = mapped_column(default="topup") # НОВОЕ: "topup" или "other"
 
 async def init_db():
     async with engine.begin() as conn:
-        # Создаем таблицы (если их нет)
         await conn.run_sync(Base.metadata.create_all)
         
-        # --- МИГРАЦИЯ: Проверяем и добавляем недостающие колонки ---
-        
-        # 1. Таблица Users
+        # Миграция для старых баз
         result = await conn.execute(text("PRAGMA table_info(users)"))
         columns = [row[1] for row in result.fetchall()]
         if 'is_blocked' not in columns:
@@ -63,7 +61,6 @@ async def init_db():
         if 'active_fixed_devices' not in columns:
             await conn.execute(text("ALTER TABLE users ADD COLUMN active_fixed_devices INTEGER"))
             
-        # 2. Таблица Tariffs
         result = await conn.execute(text("PRAGMA table_info(tariffs)"))
         columns = [row[1] for row in result.fetchall()]
         if 'limit_count' not in columns:
@@ -71,9 +68,13 @@ async def init_db():
         if 'sold_count' not in columns:
             await conn.execute(text("ALTER TABLE tariffs ADD COLUMN sold_count INTEGER DEFAULT 0"))
             
-        print("Проверка базы данных завершена (все колонки на месте).")
+        result = await conn.execute(text("PRAGMA table_info(wheel_items)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'prize_type' not in columns:
+            await conn.execute(text("ALTER TABLE wheel_items ADD COLUMN prize_type VARCHAR DEFAULT 'topup'"))
+            
+        print("Проверка базы данных завершена.")
 
-        # Заполняем базовыми данными, если таблицы пустые
         from sqlalchemy import select
         async with async_session() as session:
             res = await session.execute(select(Tariff))
@@ -85,18 +86,18 @@ async def init_db():
             res_wheel = await session.execute(select(WheelItem))
             if not res_wheel.scalars().first():
                 default_items = [
-                    WheelItem(label='186₽', color='#ff3b30', value=186, order=0),
-                    WheelItem(label='Lose', color='#555555', value=0, order=1),
-                    WheelItem(label='6₽', color='#34c759', value=6, order=2),
-                    WheelItem(label='Lose', color='#555555', value=0, order=3),
-                    WheelItem(label='10₽', color='#007aff', value=10, order=4),
-                    WheelItem(label='Lose', color='#555555', value=0, order=5),
-                    WheelItem(label='6₽', color='#34c759', value=6, order=6),
-                    WheelItem(label='50₽', color='#ff2d55', value=50, order=7),
-                    WheelItem(label='Lose', color='#555555', value=0, order=8),
-                    WheelItem(label='6₽', color='#34c759', value=6, order=9),
-                    WheelItem(label='10₽', color='#007aff', value=10, order=10),
-                    WheelItem(label='Lose', color='#555555', value=0, order=11)
+                    WheelItem(label='186₽', color='#ff3b30', value=186, order=0, prize_type='topup'),
+                    WheelItem(label='Lose', color='#555555', value=0, order=1, prize_type='topup'),
+                    WheelItem(label='6₽', color='#34c759', value=6, order=2, prize_type='topup'),
+                    WheelItem(label='Lose', color='#555555', value=0, order=3, prize_type='topup'),
+                    WheelItem(label='10₽', color='#007aff', value=10, order=4, prize_type='topup'),
+                    WheelItem(label='Lose', color='#555555', value=0, order=5, prize_type='topup'),
+                    WheelItem(label='6₽', color='#34c759', value=6, order=6, prize_type='topup'),
+                    WheelItem(label='50₽', color='#ff2d55', value=50, order=7, prize_type='topup'),
+                    WheelItem(label='Lose', color='#555555', value=0, order=8, prize_type='topup'),
+                    WheelItem(label='6₽', color='#34c759', value=6, order=9, prize_type='topup'),
+                    WheelItem(label='10₽', color='#007aff', value=10, order=10, prize_type='topup'),
+                    WheelItem(label='Lose', color='#555555', value=0, order=11, prize_type='topup')
                 ]
                 session.add_all(default_items)
                 await session.commit()
