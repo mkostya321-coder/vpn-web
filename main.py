@@ -13,42 +13,34 @@ from typing import List
 
 from database import init_db, get_db, User, Tariff, WheelItem, async_session
 
+# --- 1. Инициализация планировщика ---
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 
-@app.post("/api/support")
-async def send_support(req: SupportRequest):
+# --- 2. Вспомогательные функции ---
+async def send_tg_log(chat_env, text, topic_env=None):
     BOT_TOKEN = os.getenv("BOT_TOKEN")
-    CHAT_ID = os.getenv("SUPPORT_CHAT_ID")
-    TOPIC_ID = os.getenv("SUPPORT_TOPIC_ID")
+    CHAT_ID = os.getenv(chat_env)
     
-    if not BOT_TOKEN:
-        return {"ok": False, "error": "Нет BOT_TOKEN в Amvera (нажми Собрать!)"}
-    if not CHAT_ID:
-        return {"ok": False, "error": "Нет SUPPORT_CHAT_ID в Amvera (нажми Собрать!)"}
+    if not BOT_TOKEN or not CHAT_ID:
+        print(f"ВНИМАНИЕ: Не задан BOT_TOKEN или {chat_env}")
+        return
 
-    # Никакой HTML-разметки — только чистый текст
-    text = (
-        f"🆘 Обращение в поддержку!\n\n"
-        f"👤 От: {req.username} (ID: {req.user_id})\n"
-        f"📌 Тема: {req.subject}\n\n"
-        f"💬 Сообщение:\n{req.message}"
-    )
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
     
-    payload = {"chat_id": CHAT_ID, "text": text}  # без parse_mode!
-    
-    if TOPIC_ID and TOPIC_ID.strip() != "":
-        try: payload["message_thread_id"] = int(TOPIC_ID)
-        except ValueError: pass
+    if topic_env:
+        TOPIC_ID = os.getenv(topic_env)
+        if TOPIC_ID and TOPIC_ID.strip() != "":
+            try: payload["message_thread_id"] = int(TOPIC_ID)
+            except ValueError: pass
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload) as resp:
-            if resp.status == 200: 
-                return {"ok": True}
-            else: 
+            if resp.status != 200:
                 err = await resp.text()
-                print(f"Ошибка ТГ поддержки: {err}")
-                return {"ok": False, "error": f"Telegram: {err}"}
+                print(f"Ошибка лога ({chat_env}): {err}")
+                payload.pop("parse_mode", None)
+                await session.post(url, json=payload)
 
 async def daily_charge():
     print(f"[{datetime.now()}] Запуск ежедневных задач...")
@@ -61,10 +53,10 @@ async def daily_charge():
             user.balance -= user.daily_price
             if user.balance < 0:
                 user.balance = 0
-
         await session.execute(update(Tariff).values(sold_count=0))
         await session.commit()
 
+# --- 3. Lifespan (запуск БД и планировщика) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db() 
@@ -73,6 +65,7 @@ async def lifespan(app: FastAPI):
     yield
     scheduler.shutdown()
 
+# --- 4. СОЗДАНИЕ ПРИЛОЖЕНИЯ (должно быть ДО декораторов @app) ---
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -80,6 +73,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def root():
     return FileResponse("static/index.html")
 
+# --- 5. Модели запросов ---
 class UserSync(BaseModel):
     tg_id: int
     username: str
@@ -145,6 +139,7 @@ class AdminGrantTariff(BaseModel):
 class AdminResetCooldown(BaseModel):
     tg_id: int
 
+# --- 6. Эндпоинты ---
 @app.post("/api/user/sync")
 async def sync_user(user_data: UserSync, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, user_data.tg_id)
@@ -192,7 +187,6 @@ async def update_balance(data: BalanceUpdate, db: AsyncSession = Depends(get_db)
     if user:
         user.balance += data.amount
         await db.commit()
-        # Лог пополнения (с поддержкой темы)
         await send_tg_log(
             "LOG_TOPUP_CHAT_ID", 
             f"💰 <b>Новое пополнение!</b>\n\n👤 {user.username}\n💵 +{data.amount} ₽",
@@ -288,7 +282,6 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
         user.last_spin = datetime.now()
         
         if not data.is_other_prize:
-            # Обычный выигрыш (деньги) - с поддержкой темы
             user.balance += data.prize_value
             await send_tg_log(
                 "LOG_WHEEL_CHAT_ID", 
@@ -296,7 +289,6 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
                 topic_env="LOG_WHEEL_TOPIC_ID"
             )
         else:
-            # Заявка на ручную выдачу (в отдельную беседу с темой!)
             await send_tg_log(
                 "LOG_OTHER_CHAT_ID", 
                 f"🎁 <b>Заявка на выдачу приза!</b>\n\n👤 Пользователь: {user.username}\n🏆 Приз: {data.prize_label}\n\n<i>⚠️ Требуется ручная выдача в течение 48 часов.</i>",
@@ -351,11 +343,20 @@ async def send_support(req: SupportRequest):
     CHAT_ID = os.getenv("SUPPORT_CHAT_ID")
     TOPIC_ID = os.getenv("SUPPORT_TOPIC_ID")
     
-    if not BOT_TOKEN or not CHAT_ID:
-        return {"ok": False, "error": "Переменные не заданы"}
+    if not BOT_TOKEN:
+        return {"ok": False, "error": "Нет BOT_TOKEN в Amvera (нажми Собрать!)"}
+    if not CHAT_ID:
+        return {"ok": False, "error": "Нет SUPPORT_CHAT_ID в Amvera (нажми Собрать!)"}
 
-    text = f"🆘 <b>Обращение в поддержку!</b>\n\n👤 От: {req.username} (ID: {req.user_id})\n📌 Тема: {req.subject}\n\n💬 Сообщение:\n{req.message}"
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
+    text = (
+        f"🆘 Обращение в поддержку!\n\n"
+        f"👤 От: {req.username} (ID: {req.user_id})\n"
+        f"📌 Тема: {req.subject}\n\n"
+        f"💬 Сообщение:\n{req.message}"
+    )
+    
+    payload = {"chat_id": CHAT_ID, "text": text}
+    
     if TOPIC_ID and TOPIC_ID.strip() != "":
         try: payload["message_thread_id"] = int(TOPIC_ID)
         except ValueError: pass
@@ -363,5 +364,9 @@ async def send_support(req: SupportRequest):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload) as resp:
-            if resp.status == 200: return {"ok": True}
-            else: return {"ok": False, "error": f"Ошибка ТГ: {await resp.text()}"}
+            if resp.status == 200: 
+                return {"ok": True}
+            else: 
+                err = await resp.text()
+                print(f"Ошибка ТГ поддержки: {err}")
+                return {"ok": False, "error": f"Telegram: {err}"}
