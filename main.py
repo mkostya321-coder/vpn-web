@@ -15,10 +15,20 @@ from database import init_db, get_db, User, Tariff, WheelItem, async_session
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 
+# --- Вспомогательная функция для логов ---
+async def send_tg_log(chat_id_env, text):
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    CHAT_ID = os.getenv(chat_id_env)
+    if not BOT_TOKEN or not CHAT_ID: return
+
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
+    async with aiohttp.ClientSession() as session:
+        await session.post(url, json=payload)
+
 async def daily_charge():
     print(f"[{datetime.now()}] Запуск ежедневных задач...")
     async with async_session() as session:
-        # 1. Списание за ежедневный тариф
         result = await session.execute(select(User).where(User.balance > 0, User.is_blocked == False))
         users = result.scalars().all()
         for user in users:
@@ -28,10 +38,8 @@ async def daily_charge():
             if user.balance < 0:
                 user.balance = 0
 
-        # 2. Сброс лимитов тарифов (в 00:00 МСК)
         await session.execute(update(Tariff).values(sold_count=0))
         await session.commit()
-    print(f"[{datetime.now()}] Задачи завершены.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,7 +56,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def root():
     return FileResponse("static/index.html")
 
-# --- МОДЕЛИ ЗАПРОСОВ ---
 class UserSync(BaseModel):
     tg_id: int
     username: str
@@ -74,6 +81,7 @@ class SpinResult(BaseModel):
     tg_id: int
     prize_value: float
     prize_label: str
+    is_other_prize: bool = False
 
 class SupportRequest(BaseModel):
     user_id: int
@@ -101,11 +109,17 @@ class WheelItemCreate(BaseModel):
     label: str
     color: str
     value: int
+    prize_type: str
 
 class WheelOrderUpdate(BaseModel):
     items: List[int]
 
-# --- ЭНДПОИНТЫ ---
+class AdminGrantTariff(BaseModel):
+    tg_id: int
+    tariff_id: int
+
+class AdminResetCooldown(BaseModel):
+    tg_id: int
 
 @app.post("/api/user/sync")
 async def sync_user(user_data: UserSync, db: AsyncSession = Depends(get_db)):
@@ -129,7 +143,8 @@ async def get_user(tg_id: int, db: AsyncSession = Depends(get_db)):
         "balance": user.balance, "is_blocked": user.is_blocked, "selected_devices": user.selected_devices,
         "daily_price": user.daily_price, "active_fixed_desc": user.active_fixed_desc,
         "active_fixed_expires": user.active_fixed_expires.isoformat() if user.active_fixed_expires else None,
-        "active_fixed_devices": user.active_fixed_devices
+        "active_fixed_devices": user.active_fixed_devices,
+        "last_spin": user.last_spin.isoformat() if user.last_spin else None
     }}
 
 @app.get("/api/users/all")
@@ -153,6 +168,8 @@ async def update_balance(data: BalanceUpdate, db: AsyncSession = Depends(get_db)
     if user:
         user.balance += data.amount
         await db.commit()
+        # Лог пополнения
+        await send_tg_log("LOG_TOPUP_CHAT_ID", f"💰 <b>Новое пополнение!</b>\n\n👤 {user.username}\n💵 +{data.amount} ₽")
     return {"ok": True, "balance": user.balance if user else 0}
 
 @app.post("/api/tariff/buy")
@@ -180,21 +197,16 @@ async def cancel_tariff(data: TariffCancel, db: AsyncSession = Depends(get_db)):
     if not user or not user.active_fixed_expires:
         return {"ok": False, "error": "Нет активного тарифа"}
     
-    # Ищем исходную цену тарифа по его описанию (упрощенно)
     res = await db.execute(select(Tariff).where(Tariff.desc == user.active_fixed_desc))
     tariff = res.scalars().first()
-    if not tariff:
-         return {"ok": False, "error": "Тариф не найден в базе"}
+    if not tariff: return {"ok": False, "error": "Тариф не найден"}
 
-    # Расчет возврата
     now = datetime.now()
-    total_seconds = tariff.days * 24 * 60 * 60
     left_seconds = (user.active_fixed_expires - now).total_seconds()
     left_days = max(0, left_seconds / (24 * 60 * 60))
     
     price_per_day = tariff.price / tariff.days
-    refund = price_per_day * left_days
-    refund = round(refund, 1) # Округляем до одного знака (как в примере)
+    refund = round(price_per_day * left_days, 1)
 
     user.balance += refund
     user.active_fixed_expires = None
@@ -203,6 +215,25 @@ async def cancel_tariff(data: TariffCancel, db: AsyncSession = Depends(get_db)):
     
     await db.commit()
     return {"ok": True, "refund": refund, "balance": user.balance}
+
+@app.post("/api/admin/grant_tariff")
+async def admin_grant_tariff(data: AdminGrantTariff, db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, data.tg_id)
+    tariff = await db.get(Tariff, data.tariff_id)
+    if user and tariff:
+        user.active_fixed_expires = datetime.now() + timedelta(days=tariff.days)
+        user.active_fixed_desc = tariff.desc
+        user.active_fixed_devices = tariff.devices
+        await db.commit()
+    return {"ok": True}
+
+@app.post("/api/admin/reset_cooldown")
+async def admin_reset_cooldown(data: AdminResetCooldown, db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, data.tg_id)
+    if user:
+        user.last_spin = None
+        await db.commit()
+    return {"ok": True}
 
 @app.get("/api/tariffs")
 async def get_tariffs(db: AsyncSession = Depends(get_db)):
@@ -227,7 +258,11 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
     if user:
         user.last_spin = datetime.now()
-        user.balance += data.prize_value
+        if not data.is_other_prize:
+            user.balance += data.prize_value
+            await send_tg_log("LOG_WHEEL_CHAT_ID", f"🎰 <b>Колесо удачи!</b>\n\n👤 {user.username}\n💰 Выигрыш: {data.prize_label}")
+        else:
+            await send_tg_log("LOG_WHEEL_CHAT_ID", f"🎁 <b>Заявка на выдачу приза!</b>\n\n👤 {user.username}\n🏆 Приз: {data.prize_label}\n\n<i>Требуется ручная выдача.</i>")
         await db.commit()
     return {"ok": True}
 
@@ -248,7 +283,7 @@ async def get_wheel_items(db: AsyncSession = Depends(get_db)):
 async def add_wheel_item(data: WheelItemCreate, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(WheelItem))
     count = len(res.scalars().all())
-    new_item = WheelItem(label=data.label, color=data.color, value=data.value, order=count)
+    new_item = WheelItem(label=data.label, color=data.color, value=data.value, order=count, prize_type=data.prize_type)
     db.add(new_item)
     await db.commit()
     return {"ok": True}
