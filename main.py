@@ -15,14 +15,25 @@ from database import init_db, get_db, User, Tariff, WheelItem, async_session
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 
-# --- Вспомогательная функция для логов ---
-async def send_tg_log(chat_id_env, text):
+# --- Вспомогательная функция для логов (с поддержкой тем) ---
+async def send_tg_log(chat_env, text, topic_env=None):
     BOT_TOKEN = os.getenv("BOT_TOKEN")
-    CHAT_ID = os.getenv(chat_id_env)
-    if not BOT_TOKEN or not CHAT_ID: return
+    CHAT_ID = os.getenv(chat_env)
+    
+    if not BOT_TOKEN or not CHAT_ID:
+        print(f"ВНИМАНИЕ: Не задан BOT_TOKEN или {chat_env}")
+        return
+
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
+    
+    # Если указана переменная для темы — читаем и добавляем
+    if topic_env:
+        TOPIC_ID = os.getenv(topic_env)
+        if TOPIC_ID and TOPIC_ID.strip() != "":
+            try: payload["message_thread_id"] = int(TOPIC_ID)
+            except ValueError: pass
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
     async with aiohttp.ClientSession() as session:
         await session.post(url, json=payload)
 
@@ -258,11 +269,22 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
     if user:
         user.last_spin = datetime.now()
+        
         if not data.is_other_prize:
+            # Обычный выигрыш (деньги)
             user.balance += data.prize_value
-            await send_tg_log("LOG_WHEEL_CHAT_ID", f"🎰 <b>Колесо удачи!</b>\n\n👤 {user.username}\n💰 Выигрыш: {data.prize_label}")
+            await send_tg_log(
+                "LOG_WHEEL_CHAT_ID", 
+                f"🎰 <b>Колесо удачи!</b>\n\n👤 {user.username}\n💰 Выигрыш: {data.prize_label}"
+            )
         else:
-            await send_tg_log("LOG_WHEEL_CHAT_ID", f"🎁 <b>Заявка на выдачу приза!</b>\n\n👤 {user.username}\n🏆 Приз: {data.prize_label}\n\n<i>Требуется ручная выдача.</i>")
+            # Заявка на ручную выдачу (в отдельную беседу!)
+            await send_tg_log(
+                "LOG_OTHER_CHAT_ID", 
+                f"🎁 <b>Заявка на выдачу приза!</b>\n\n👤 Пользователь: {user.username}\n🏆 Приз: {data.prize_label}\n\n<i>⚠️ Требуется ручная выдача в течение 48 часов.</i>",
+                topic_env="LOG_OTHER_TOPIC_ID"
+            )
+        
         await db.commit()
     return {"ok": True}
 
@@ -314,8 +336,8 @@ async def send_support(req: SupportRequest):
     if not BOT_TOKEN or not CHAT_ID:
         return {"ok": False, "error": "Переменные не заданы"}
 
-    text = f"🆘 Обращение в поддержку!\n\n👤 От: {req.username} (ID: {req.user_id})\n📌 Тема: {req.subject}\n\n💬 Сообщение:\n{req.message}"
-    payload = {"chat_id": CHAT_ID, "text": text}
+    text = f"🆘 <b>Обращение в поддержку!</b>\n\n👤 От: {req.username} (ID: {req.user_id})\n📌 Тема: {req.subject}\n\n💬 Сообщение:\n{req.message}"
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
     if TOPIC_ID and TOPIC_ID.strip() != "":
         try: payload["message_thread_id"] = int(TOPIC_ID)
         except ValueError: pass
