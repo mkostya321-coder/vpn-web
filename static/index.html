@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    
-    <!-- Подключаем стили -->
     <link rel="stylesheet" href="/static/css/style.css">
-    
     <title>NC VPN</title>
 </head>
 <body>
@@ -19,7 +16,7 @@
         <button class="btn-main" onclick="closeWelcome()">Продолжить</button>
     </div>
 
-    <!-- МОДАЛКА 1: ХОТИТЕ УЛУЧШИТЬ? -->
+    <!-- МОДАЛКА: ГЭМБЛ -->
     <div class="modal" id="gamble-modal">
         <div class="modal-content">
             <h2 style="color: var(--promo); margin-bottom: 10px;">Хотите улучшить выигрыш?</h2>
@@ -29,7 +26,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА 2: ИГРА В ГЭМБЛ -->
     <div class="modal" id="gamble-game-modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 5px;" id="upgrade-title">Апгрейд x2</h3>
@@ -46,9 +42,29 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА: УПРАВЛЕНИЕ ЮЗЕРОМ (АДМИН) -->
+    <div class="modal" id="user-manage-modal">
+        <div class="modal-content" style="text-align: left;">
+            <div class="modal-close" onclick="closeUserModal()">✕</div>
+            <h3 style="margin-bottom: 15px; text-align: center;">Управление юзером</h3>
+            <p id="manage-username" style="color: var(--accent); font-weight: bold; margin-bottom: 15px; text-align: center;"></p>
+            
+            <label style="font-size: 12px; color: var(--text-muted);">Пополнить баланс:</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="number" id="add-balance-input" placeholder="Сумма" style="margin-bottom: 0;">
+                <button class="btn btn-success" style="width: auto;" onclick="adminAddBal()">Начислить</button>
+            </div>
+
+            <button class="btn" style="margin-bottom: 15px; background: var(--promo);" onclick="adminResetUserCd()">Сбросить кулдаун</button>
+            
+            <label style="font-size: 12px; color: var(--text-muted);">Выдать тариф:</label>
+            <select id="admin-tariff-select" style="margin-bottom: 10px;"></select>
+            <button class="btn" onclick="adminGiveTariff()">Выдать выбранный</button>
+        </div>
+    </div>
+
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     
-    <!-- БОКОВОЕ МЕНЮ -->
     <div class="sidebar" id="sidebar">
         <h2 style="margin-bottom: 20px; text-align: center;">NC VPN</h2>
         <div class="menu-item active" id="tab-home" onclick="switchTab('home')">🏠 Главная</div>
@@ -69,14 +85,12 @@
         </div>
     </div>
 
-    <!-- ШАПКА -->
     <div class="header">
         <div class="burger" id="burger-btn" onclick="toggleMenu()">☰</div>
         <div class="back-btn" id="back-btn" onclick="switchTab('home')">←</div>
         <div class="header-title" id="header-title">Главная</div>
     </div>
 
-    <!-- ОСНОВНОЙ КОНТЕНТ -->
     <div class="main-content">
         
         <!-- ГЛАВНАЯ -->
@@ -113,9 +127,38 @@
             <button class="btn" style="margin-top: 15px; padding: 15px;" onclick="connectVpn()">Подключить VPN</button>
         </div>
 
+        <!-- ПОДКЛЮЧЕНИЕ (возвращено) -->
+        <div id="view-connect" style="display: none;">
+            <h2 style="text-align: center; margin-bottom: 20px;">Настройка VPN</h2>
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Ваша ссылка подписки</div>
+                <div class="sub-link-box" id="sub-link">Получение...</div>
+                <button class="btn" onclick="copyLink()">Скопировать</button>
+            </div>
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">2. Установите клиент</div>
+                <div class="client-card">
+                    <div class="client-icon" style="background: #007aff;">H</div>
+                    <div><h4>Happ</h4><p style="color: var(--text-muted); font-size: 12px;">Windows, iOS, Android</p></div>
+                </div>
+                <div class="client-card">
+                    <div class="client-icon" style="background: #34c759;">V</div>
+                    <div><h4>v2RayTun</h4><p style="color: var(--text-muted); font-size: 12px;">iOS, Android</p></div>
+                </div>
+                <div class="client-card">
+                    <div class="client-icon" style="background: #ff9500;">H</div>
+                    <div><h4>Hiddify</h4><p style="color: var(--text-muted); font-size: 12px;">Windows, macOS, Linux, Android, iOS</p></div>
+                </div>
+            </div>
+            <div class="card">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">3. Вставьте ссылку</div>
+                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">Откройте выбранное приложение, найдите кнопку «+» или «Добавить подписку по ссылке» и вставьте скопированную ссылку.</p>
+            </div>
+        </div>
+
         <!-- КОЛЕСО -->
         <div id="view-wheel" style="display: none;">
-            <div class="card">
+            <div class="card" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);">
                 <h3 style="text-align: center;">Колесо Фортуны</h3>
                 <div class="wheel-container" id="wheel-wrapper">
                     <div class="wheel-pointer">▼</div>
@@ -149,16 +192,6 @@
             </div>
         </div>
 
-        <!-- ПОДКЛЮЧЕНИЕ -->
-        <div id="view-connect" style="display: none;">
-            <h2 style="text-align: center; margin-bottom: 20px;">Настройка VPN</h2>
-            <div class="card">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Ваша ссылка подписки</div>
-                <div class="sub-link-box" id="sub-link">Получение...</div>
-                <button class="btn" onclick="copyLink()">Скопировать</button>
-            </div>
-        </div>
-        
         <!-- ПОДДЕРЖКА -->
         <div id="view-support" style="display: none;">
             <div class="card">
@@ -214,14 +247,17 @@
             <div class="card">
                 <h3 style="margin-bottom: 15px; color: var(--promo);">Конструктор колеса</h3>
                 <button class="btn btn-danger" style="margin-bottom: 15px;" onclick="toggleWheelVisibility()" id="wheel-toggle-btn">Отключить колесо</button>
-                <button class="btn" style="margin-bottom: 15px;" onclick="resetAllCooldowns()">Сбросить кулдаун всем</button>
                 
                 <h4 style="margin-bottom: 10px;">Сектора (зажми и перетащи):</h4>
                 <div id="admin-wheel-list" style="margin-bottom: 20px;"></div>
                 
                 <h4 style="margin-bottom: 10px;">Добавить сектор:</h4>
-                <input type="text" id="new-wheel-label" placeholder="Текст (например: 50₽)">
-                <input type="number" id="new-wheel-value" placeholder="Сумма баланса (например: 50)">
+                <input type="text" id="new-wheel-label" placeholder="Текст (например: 50₽ или Скидка)">
+                <select id="new-wheel-type" onchange="toggleWheelValueInput()">
+                    <option value="topup">Пополнением (баланс)</option>
+                    <option value="other">Другое (заявка админу)</option>
+                </select>
+                <input type="number" id="new-wheel-value" placeholder="Сумма пополнения (например: 50)">
                 <input type="color" id="new-wheel-color" style="height: 50px; padding: 5px; cursor: pointer;">
                 <button class="btn btn-success" onclick="addWheelItem()">Добавить сектор</button>
             </div>
@@ -234,11 +270,10 @@
         Бот для заработка - <a href="https://t.me/ncjobbot" target="_blank">@ncjobbot</a>
     </div>
 
-    <!-- Подключаем модули в правильном порядке -->
-    <script src="/static/js/state.js?v=4"></script>
-    <script src="/static/js/user.js?v=4"></script>
-    <script src="/static/js/wheel.js?v=4"></script>
-    <script src="/static/js/admin.js?v=4"></script>
-    <script src="/static/js/main.js?v=4"></script>
+    <script src="/static/js/state.js?v=5"></script>
+    <script src="/static/js/user.js?v=5"></script>
+    <script src="/static/js/wheel.js?v=5"></script>
+    <script src="/static/js/admin.js?v=5"></script>
+    <script src="/static/js/main.js?v=5"></script>
 </body>
 </html>
