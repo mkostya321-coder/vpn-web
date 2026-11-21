@@ -15,27 +15,40 @@ from database import init_db, get_db, User, Tariff, WheelItem, async_session
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 
-# --- Вспомогательная функция для логов (с поддержкой тем) ---
-async def send_tg_log(chat_env, text, topic_env=None):
+@app.post("/api/support")
+async def send_support(req: SupportRequest):
     BOT_TOKEN = os.getenv("BOT_TOKEN")
-    CHAT_ID = os.getenv(chat_env)
+    CHAT_ID = os.getenv("SUPPORT_CHAT_ID")
+    TOPIC_ID = os.getenv("SUPPORT_TOPIC_ID")
     
-    if not BOT_TOKEN or not CHAT_ID:
-        print(f"ВНИМАНИЕ: Не задан BOT_TOKEN или {chat_env}")
-        return
+    if not BOT_TOKEN:
+        return {"ok": False, "error": "Нет BOT_TOKEN в Amvera (нажми Собрать!)"}
+    if not CHAT_ID:
+        return {"ok": False, "error": "Нет SUPPORT_CHAT_ID в Amvera (нажми Собрать!)"}
 
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
+    # Никакой HTML-разметки — только чистый текст
+    text = (
+        f"🆘 Обращение в поддержку!\n\n"
+        f"👤 От: {req.username} (ID: {req.user_id})\n"
+        f"📌 Тема: {req.subject}\n\n"
+        f"💬 Сообщение:\n{req.message}"
+    )
     
-    # Если указана переменная для темы — читаем и добавляем
-    if topic_env:
-        TOPIC_ID = os.getenv(topic_env)
-        if TOPIC_ID and TOPIC_ID.strip() != "":
-            try: payload["message_thread_id"] = int(TOPIC_ID)
-            except ValueError: pass
+    payload = {"chat_id": CHAT_ID, "text": text}  # без parse_mode!
+    
+    if TOPIC_ID and TOPIC_ID.strip() != "":
+        try: payload["message_thread_id"] = int(TOPIC_ID)
+        except ValueError: pass
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     async with aiohttp.ClientSession() as session:
-        await session.post(url, json=payload)
+        async with session.post(url, json=payload) as resp:
+            if resp.status == 200: 
+                return {"ok": True}
+            else: 
+                err = await resp.text()
+                print(f"Ошибка ТГ поддержки: {err}")
+                return {"ok": False, "error": f"Telegram: {err}"}
 
 async def daily_charge():
     print(f"[{datetime.now()}] Запуск ежедневных задач...")
