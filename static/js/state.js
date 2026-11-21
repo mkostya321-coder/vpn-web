@@ -7,6 +7,7 @@ const tgFirstName = tg.initDataUnsafe?.user?.first_name || 'User';
 
 let appState = {
     isAdmin: false,
+    selectedUserId: null,
     user: {
         tg_id: tg.initDataUnsafe?.user?.id || 123456789,
         tg_username: tg.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : '@no_username',
@@ -52,6 +53,7 @@ async function loadInitialData() {
             appState.user.is_blocked = dataUser.user.is_blocked;
             appState.user.activeFixed = dataUser.user.active_fixed_expires ? { expires: new Date(dataUser.user.active_fixed_expires).getTime(), desc: dataUser.user.active_fixed_desc } : null;
             appState.user.activeFixedDevices = dataUser.user.active_fixed_devices || 1;
+            if(dataUser.user.last_spin) appState.user.lastSpin = new Date(dataUser.user.last_spin).getTime();
         }
 
         const resTariffs = await fetch('/api/tariffs');
@@ -117,18 +119,12 @@ function updateUI() {
     document.getElementById('user-tg-username').textContent = appState.user.tg_username;
 
     const topupList = document.getElementById('topup-history');
-    if (appState.user.topupHistory.length === 0) {
-        topupList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
-    } else {
-        topupList.innerHTML = appState.user.topupHistory.map(item => `<li><span>${item.date}</span><b style="color:var(--success);">+${item.amount} ₽</b></li>`).join('');
-    }
+    if (appState.user.topupHistory.length === 0) topupList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
+    else topupList.innerHTML = appState.user.topupHistory.map(item => `<li><span>${item.date}</span><b style="color:var(--success);">+${item.amount} ₽</b></li>`).join('');
 
     const wheelList = document.getElementById('wheel-history');
-    if (appState.user.wheelHistory.length === 0) {
-        wheelList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
-    } else {
-        wheelList.innerHTML = appState.user.wheelHistory.map(item => `<li><span>${item.date}</span><span style="color:var(--promo);">${item.prize}</span></li>`).join('');
-    }
+    if (appState.user.wheelHistory.length === 0) wheelList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
+    else wheelList.innerHTML = appState.user.wheelHistory.map(item => `<li><span>${item.date}</span><span style="color:var(--promo);">${item.prize}</span></li>`).join('');
 
     const now = Date.now();
     if (appState.user.activeFixed && appState.user.activeFixed.expires > now) {
