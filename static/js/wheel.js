@@ -75,7 +75,18 @@ async function spinWheel() {
         localStorage.setItem('nc_vpn_lastSpin', appState.user.lastSpin);
         updateCooldownUI();
 
-        if (prize.value > 0) {
+        const isOther = prize.prize_type === 'other';
+        const prizeValue = isOther ? 0 : prize.value;
+
+        await fetch('/api/wheel/spin', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: prizeValue, prize_label: prize.label, is_other_prize: isOther })
+        });
+
+        if (isOther) {
+            tg.showAlert(`🎉 <b>ПОЗДРАВЛЯЕМ! ВЫ ВЫИГРАЛИ ПРИЗ!</b> 🎉\n\n🏆 Приз: ${prize.label}\n\nВыигрыш вы получите в течение 48 часов. Возможны уточнения от администратора, ожидайте!`);
+            recordWheelToHistory(`Приз: ${prize.label}`);
+        } else if (prize.value > 0) {
             appState.currentPendingWin = prize.value;
             appState.upgradeLevel = 0; 
             document.getElementById('win-amount').textContent = prize.value + ' ₽';
@@ -83,19 +94,18 @@ async function spinWheel() {
         } else {
             tg.showAlert('Lose! В следующий раз повезет.');
             recordWheelToHistory('Lose');
-            btn.textContent = 'Крутить';
         }
+        btn.textContent = 'Крутить';
     }, 7000);
 }
 
-// --- Гэмбл (Апгрейд) ---
 function claimWin() {
     document.getElementById('gamble-modal').classList.remove('open');
     document.getElementById('gamble-game-modal').classList.remove('open');
     
     fetch('/api/wheel/spin', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: appState.currentPendingWin, prize_label: `+${appState.currentPendingWin}₽` })
+        body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: appState.currentPendingWin, prize_label: `+${appState.currentPendingWin}₽`, is_other_prize: false })
     });
     appState.user.balance += appState.currentPendingWin;
     recordWheelToHistory(`+${appState.currentPendingWin}₽ (Забрал)`);
@@ -108,15 +118,12 @@ function claimWin() {
 }
 
 function startGamble() {
-    if (appState.upgradeLevel >= 10) {
-        return tg.showAlert("Вы достигли максимального уровня апгрейда (x1024)! Забирайте приз.");
-    }
+    if (appState.upgradeLevel >= 10) return tg.showAlert("Вы достигли максимального уровня апгрейда!");
     appState.isGambling = true;
     document.getElementById('gamble-modal').classList.remove('open');
     document.getElementById('gamble-game-modal').classList.add('open');
     
-    const nextMultiplier = Math.pow(2, appState.upgradeLevel + 1);
-    document.getElementById('upgrade-title').textContent = `Апгрейд x${nextMultiplier}`;
+    document.getElementById('upgrade-title').textContent = `Апгрейд x${Math.pow(2, appState.upgradeLevel + 1)}`;
     
     const needle = document.getElementById('gamble-needle');
     needle.style.transition = 'none';
@@ -132,9 +139,7 @@ function runGamble() {
     btn.disabled = true; btn.textContent = 'Крутим...';
 
     const win = Math.random() > 0.5;
-    let targetAngle = 0;
-    if (win) { targetAngle = Math.floor(Math.random() * 170) + 5; } 
-    else { targetAngle = Math.floor(Math.random() * 170) + 185; }
+    let targetAngle = win ? (Math.floor(Math.random() * 170) + 5) : (Math.floor(Math.random() * 170) + 185);
     targetAngle += 360 * 5;
 
     const needle = document.getElementById('gamble-needle');
@@ -146,20 +151,17 @@ function runGamble() {
             appState.currentPendingWin *= 2;
             appState.upgradeLevel++;
             document.getElementById('win-amount').textContent = appState.currentPendingWin + ' ₽';
-            
             tg.showAlert(`🎉 ПОБЕДА! Ваш приз увеличен до ${appState.currentPendingWin} ₽!`);
             document.getElementById('gamble-game-modal').classList.remove('open');
             
             if (appState.upgradeLevel >= 10) {
-                tg.showAlert(`🏆 Невероятно! Вы достигли максимального апгрейда (x1024)! Забирайте ${appState.currentPendingWin} ₽!`);
                 claimWin();
             } else {
                 document.getElementById('gamble-modal').classList.add('open');
             }
         } else {
-            tg.showAlert('💀 К сожалению, фортуна отвернулась от вас. Вы потеряли этот выигрыш. В следующий раз обязательно повезёт!');
+            tg.showAlert('💀 Фортуна отвернулась от вас. Вы потеряли этот выигрыш.');
             document.getElementById('gamble-game-modal').classList.remove('open');
-            
             appState.currentPendingWin = 0;
             appState.upgradeLevel = 0;
             appState.isGambling = false;
