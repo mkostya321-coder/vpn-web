@@ -74,11 +74,19 @@ class Transaction(Base):
     type: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
+# --- НОВАЯ МОДЕЛЬ ---
+class Admin(Base):
+    __tablename__ = "admins"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]                          # Отображаемое имя
+    tg_username: Mapped[str] = mapped_column(index=True)  # Telegram username (без @)
+    login: Mapped[str]
+    password: Mapped[str]
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
-        # Миграции для users
         result = await conn.execute(text("PRAGMA table_info(users)"))
         cols = [row[1] for row in result.fetchall()]
         if 'is_blocked' not in cols:
@@ -86,7 +94,6 @@ async def init_db():
         if 'active_fixed_devices' not in cols:
             await conn.execute(text("ALTER TABLE users ADD COLUMN active_fixed_devices INTEGER"))
         
-        # Миграции для tariffs
         result = await conn.execute(text("PRAGMA table_info(tariffs)"))
         cols = [row[1] for row in result.fetchall()]
         if 'limit_count' not in cols:
@@ -94,7 +101,6 @@ async def init_db():
         if 'sold_count' not in cols:
             await conn.execute(text("ALTER TABLE tariffs ADD COLUMN sold_count INTEGER DEFAULT 0"))
         
-        # Миграции для wheel_items
         result = await conn.execute(text("PRAGMA table_info(wheel_items)"))
         cols = [row[1] for row in result.fetchall()]
         if 'prize_type' not in cols:
