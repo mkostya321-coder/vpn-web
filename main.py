@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 from database import (init_db, get_db, User, Tariff, WheelItem, 
-                       PromoCode, UserPromo, Transaction, async_session)
+                       PromoCode, UserPromo, Transaction, Admin, async_session)
 
 class NoCacheStaticFiles(StaticFiles):
     async def get_response(self, path, scope):
@@ -24,6 +24,12 @@ class NoCacheStaticFiles(StaticFiles):
         return r
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+
+def is_owner(tg_id: int) -> bool:
+    owner = os.getenv("OWNER_ID")
+    if not owner: return False
+    try: return int(owner) == int(tg_id)
+    except: return False
 
 async def send_tg_log(chat_env, text, topic_env=None):
     token = os.getenv("BOT_TOKEN")
@@ -103,14 +109,25 @@ class PromoActivate(BaseModel):
 class PromoCreate(BaseModel):
     code: str; discount_percent: int = 0; balance_bonus: float = 0.0
     usage_limit: int = 0; valid_days: int = 0
-class AdminActivatePromo(BaseModel):
-    tg_id: int; code: str
+
+# НОВЫЕ:
+class AdminLoginRequest(BaseModel):
+    tg_username: str
+    login: str
+    password: str
+
+class AdminCreateRequest(BaseModel):
+    requester_id: int
+    name: str
+    tg_username: str
+    login: str
+    password: str
 
 async def add_transaction(db, user_id, amount, type_):
     db.add(Transaction(user_id=user_id, amount=amount, type=type_))
     await db.commit()
 
-# --- Эндпоинты ---
+# --- Эндпоинты (без изменений) ---
 @app.post("/api/user/sync")
 async def sync_user(data: UserSync, db: AsyncSession = Depends(get_db)):
     u = await db.get(User, data.tg_id)
@@ -126,7 +143,6 @@ async def sync_user(data: UserSync, db: AsyncSession = Depends(get_db)):
 async def get_user(tg_id: int, db: AsyncSession = Depends(get_db)):
     u = await db.get(User, tg_id)
     if not u: return {"ok": False}
-    # Проверка активной скидки
     now = datetime.now()
     ap = await db.execute(select(UserPromo).where(UserPromo.user_id == tg_id, UserPromo.expires_at > now))
     active_promo = ap.scalars().first()
@@ -135,7 +151,6 @@ async def get_user(tg_id: int, db: AsyncSession = Depends(get_db)):
         pc = await db.execute(select(PromoCode).where(PromoCode.code == active_promo.promo_code))
         p = pc.scalars().first()
         if p: discount = p.discount_percent
-    
     return {"ok": True, "user": {
         "id": u.id, "username": u.username, "nickname": u.nickname,
         "balance": u.balance, "is_blocked": u.is_blocked,
@@ -150,16 +165,14 @@ async def get_user(tg_id: int, db: AsyncSession = Depends(get_db)):
 async def get_transactions(tg_id: int, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(Transaction).where(Transaction.user_id == tg_id).order_by(Transaction.created_at.desc()).limit(30))
     return {"ok": True, "transactions": [
-        {"amount": t.amount, "type": t.type, "created_at": t.created_at.isoformat()}
-        for t in res.scalars().all()
+        {"amount": t.amount, "type": t.type, "created_at": t.created_at.isoformat()} for t in res.scalars().all()
     ]}
 
 @app.get("/api/users/all")
 async def get_all_users(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(User))
     return {"ok": True, "users": [
-        {"id": u.id, "username": u.username, "nickname": u.nickname,
-         "balance": u.balance, "is_blocked": u.is_blocked}
+        {"id": u.id, "username": u.username, "nickname": u.nickname, "balance": u.balance, "is_blocked": u.is_blocked}
         for u in res.scalars().all()
     ]}
 
@@ -167,8 +180,7 @@ async def get_all_users(db: AsyncSession = Depends(get_db)):
 async def admin_update_user(data: AdminUserUpdate, db: AsyncSession = Depends(get_db)):
     u = await db.get(User, data.tg_id)
     if u:
-        u.balance = data.new_balance
-        u.is_blocked = data.is_blocked
+        u.balance = data.new_balance; u.is_blocked = data.is_blocked
         await db.commit()
     return {"ok": True}
 
@@ -201,13 +213,10 @@ async def admin_set_balance(data: AdminUserUpdate, db: AsyncSession = Depends(ge
 
 @app.post("/api/tariff/buy")
 async def buy_tariff(data: FixedTariffBuy, db: AsyncSession = Depends(get_db)):
-    u = await db.get(User, data.tg_id)
-    t = await db.get(Tariff, data.tariff_id)
+    u = await db.get(User, data.tg_id); t = await db.get(Tariff, data.tariff_id)
     if not u or not t: return {"ok": False, "error": "Ошибка"}
-    if u.is_blocked: return {"ok": False, "error": "Вы заблокированы"}
+    if u.is_blocked: return {"ok": False, "error": "Заблокированы"}
     if t.limit_count > 0 and t.sold_count >= t.limit_count: return {"ok": False, "error": "Распродан"}
-    
-    # Скидка
     now = datetime.now()
     ap = await db.execute(select(UserPromo).where(UserPromo.user_id == u.id, UserPromo.expires_at > now))
     active = ap.scalars().first()
@@ -217,9 +226,7 @@ async def buy_tariff(data: FixedTariffBuy, db: AsyncSession = Depends(get_db)):
         p = pc.scalars().first()
         if p and p.discount_percent > 0:
             price = round(t.price * (1 - p.discount_percent / 100), 1)
-    
     if u.balance < price: return {"ok": False, "error": "Недостаточно средств"}
-    
     u.balance -= price
     u.active_fixed_expires = datetime.now() + timedelta(days=t.days)
     u.active_fixed_desc = t.desc
@@ -234,10 +241,9 @@ async def cancel_tariff(data: TariffCancel, db: AsyncSession = Depends(get_db)):
     if not u or not u.active_fixed_expires: return {"ok": False, "error": "Нет тарифа"}
     res = await db.execute(select(Tariff).where(Tariff.desc == u.active_fixed_desc))
     t = res.scalars().first()
-    if not t: return {"ok": False, "error": "Тариф не найден"}
-    now = datetime.now()
-    left_days = max(0, (u.active_fixed_expires - now).total_seconds() / 86400)
-    refund = round((t.price / t.days) * left_days, 1)
+    if not t: return {"ok": False, "error": "Не найден"}
+    left = max(0, (u.active_fixed_expires - datetime.now()).total_seconds() / 86400)
+    refund = round((t.price / t.days) * left, 1)
     u.balance += refund
     u.active_fixed_expires = None; u.active_fixed_desc = None; u.active_fixed_devices = None
     await add_transaction(db, u.id, refund, "tariff_cancel")
@@ -245,21 +251,17 @@ async def cancel_tariff(data: TariffCancel, db: AsyncSession = Depends(get_db)):
 
 @app.post("/api/admin/grant_tariff")
 async def admin_grant_tariff(data: AdminGrantTariff, db: AsyncSession = Depends(get_db)):
-    u = await db.get(User, data.tg_id)
-    t = await db.get(Tariff, data.tariff_id)
+    u = await db.get(User, data.tg_id); t = await db.get(Tariff, data.tariff_id)
     if u and t:
         u.active_fixed_expires = datetime.now() + timedelta(days=t.days)
-        u.active_fixed_desc = t.desc
-        u.active_fixed_devices = t.devices
+        u.active_fixed_desc = t.desc; u.active_fixed_devices = t.devices
         await db.commit()
     return {"ok": True}
 
 @app.post("/api/admin/reset_cooldown")
 async def admin_reset_cooldown(data: AdminResetCooldown, db: AsyncSession = Depends(get_db)):
     u = await db.get(User, data.tg_id)
-    if u:
-        u.last_spin = None
-        await db.commit()
+    if u: u.last_spin = None; await db.commit()
     return {"ok": True}
 
 @app.post("/api/admin/reset_all_cooldowns")
@@ -295,16 +297,14 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
             await add_transaction(db, u.id, data.prize_value, "wheel_win")
             await send_tg_log("LOG_WHEEL_CHAT_ID", f"🎰 <b>Колесо</b>\n\n👤 {u.username}\n💰 {data.prize_label}", "LOG_WHEEL_TOPIC_ID")
         else:
-            await send_tg_log("LOG_OTHER_CHAT_ID", f"🎁 <b>Заявка на приз!</b>\n\n👤 {u.username}\n🏆 {data.prize_label}\n\n<i>Требуется ручная выдача 48ч.</i>", "LOG_OTHER_TOPIC_ID")
+            await send_tg_log("LOG_OTHER_CHAT_ID", f"🎁 <b>Заявка</b>\n\n👤 {u.username}\n🏆 {data.prize_label}\n\n<i>Ручная выдача 48ч.</i>", "LOG_OTHER_TOPIC_ID")
         await db.commit()
     return {"ok": True}
 
 @app.post("/api/wheel/gamble")
 async def gamble(data: GambleRequest, db: AsyncSession = Depends(get_db)):
     u = await db.get(User, data.tg_id)
-    if u and not data.won_gamble:
-        u.balance -= data.original_win
-        await db.commit()
+    if u and not data.won_gamble: u.balance -= data.original_win; await db.commit()
     return {"ok": True}
 
 @app.get("/api/wheel_items")
@@ -315,8 +315,7 @@ async def get_wheel_items(db: AsyncSession = Depends(get_db)):
 @app.post("/api/wheel_items")
 async def add_wheel_item(data: WheelItemCreate, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(WheelItem))
-    db.add(WheelItem(label=data.label, color=data.color, value=data.value,
-                     order=len(res.scalars().all()), prize_type=data.prize_type))
+    db.add(WheelItem(label=data.label, color=data.color, value=data.value, order=len(res.scalars().all()), prize_type=data.prize_type))
     await db.commit()
     return {"ok": True}
 
@@ -339,9 +338,7 @@ async def create_vpn(req: CreateUserRequest):
 
 @app.post("/api/support")
 async def send_support(req: SupportRequest):
-    token = os.getenv("BOT_TOKEN")
-    chat = os.getenv("SUPPORT_CHAT_ID")
-    topic = os.getenv("SUPPORT_TOPIC_ID")
+    token = os.getenv("BOT_TOKEN"); chat = os.getenv("SUPPORT_CHAT_ID"); topic = os.getenv("SUPPORT_TOPIC_ID")
     if not token or not chat: return {"ok": False, "error": "Переменные не заданы"}
     text = f"🆘 Обращение\n\n👤 {req.username} (ID: {req.user_id})\n📌 {req.subject}\n\n💬 {req.message}"
     payload = {"chat_id": chat, "text": text}
@@ -353,38 +350,27 @@ async def send_support(req: SupportRequest):
         async with s.post(url, json=payload) as r:
             return {"ok": r.status == 200, "error": await r.text() if r.status != 200 else None}
 
-# --- Промокоды ---
 @app.post("/api/promo/activate")
 async def activate_promo(data: PromoActivate, db: AsyncSession = Depends(get_db)):
     u = await db.get(User, data.user_id)
     if not u: return {"ok": False, "error": "Пользователь не найден"}
-    
     code_upper = data.code.strip().upper()
-    
-    # Проверка 24ч кулдауна
     last = await db.execute(select(func.max(UserPromo.used_at)).where(UserPromo.user_id == u.id))
     last_used = last.scalar()
     if last_used:
         diff = (datetime.now() - last_used).total_seconds()
         if diff < 86400:
             hours = int((86400 - diff) / 3600)
-            return {"ok": False, "error": f"Следующий промокод можно ввести через {hours}ч"}
-    
-    # Использовался ли этот код уже?
+            return {"ok": False, "error": f"Следующий промокод через {hours}ч"}
     check = await db.execute(select(UserPromo).where(UserPromo.user_id == u.id, UserPromo.promo_code == code_upper))
-    if check.scalars().first():
-        return {"ok": False, "error": "Вы уже использовали этот промокод"}
-    
+    if check.scalars().first(): return {"ok": False, "error": "Вы уже использовали этот промокод"}
     pc = await db.execute(select(PromoCode).where(PromoCode.code == code_upper, PromoCode.is_active == True))
     p = pc.scalars().first()
     if not p: return {"ok": False, "error": "Промокод не найден"}
     if p.usage_limit > 0 and p.used_count >= p.usage_limit:
-        return {"ok": False, "error": "Промокод недействителен (лимит исчерпан)"}
-    
+        return {"ok": False, "error": "Промокод недействителен"}
     expires = None
-    if p.valid_days > 0:
-        expires = datetime.now() + timedelta(days=p.valid_days)
-    
+    if p.valid_days > 0: expires = datetime.now() + timedelta(days=p.valid_days)
     db.add(UserPromo(user_id=u.id, promo_code=code_upper, expires_at=expires))
     if p.balance_bonus > 0:
         u.balance += p.balance_bonus
@@ -402,11 +388,9 @@ async def get_promos(db: AsyncSession = Depends(get_db)):
 async def create_promo(data: PromoCreate, db: AsyncSession = Depends(get_db)):
     code_up = data.code.strip().upper()
     check = await db.execute(select(PromoCode).where(PromoCode.code == code_up))
-    if check.scalars().first():
-        return {"ok": False, "error": "Код уже существует"}
-    db.add(PromoCode(code=code_up, discount_percent=data.discount_percent,
-                     balance_bonus=data.balance_bonus, usage_limit=data.usage_limit,
-                     valid_days=data.valid_days))
+    if check.scalars().first(): return {"ok": False, "error": "Код уже существует"}
+    db.add(PromoCode(code=code_up, discount_percent=data.discount_percent, balance_bonus=data.balance_bonus,
+                     usage_limit=data.usage_limit, valid_days=data.valid_days))
     await db.commit()
     return {"ok": True}
 
@@ -420,12 +404,75 @@ async def delete_promo(id: int, db: AsyncSession = Depends(get_db)):
 async def get_user_promos(tg_id: int, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(UserPromo).where(UserPromo.user_id == tg_id))
     return {"ok": True, "user_promos": [
-        {"id": up.id, "promo_code": up.promo_code, "expires_at": up.expires_at.isoformat() if up.expires_at else None}
-        for up in res.scalars().all()
+        {"id": up.id, "promo_code": up.promo_code,
+         "expires_at": up.expires_at.isoformat() if up.expires_at else None} for up in res.scalars().all()
     ]}
 
 @app.delete("/api/admin/user_promos/{id}")
 async def remove_user_promo(id: int, db: AsyncSession = Depends(get_db)):
     await db.execute(delete(UserPromo).where(UserPromo.id == id))
+    await db.commit()
+    return {"ok": True}
+
+# ========== НОВЫЕ ЭНДПОИНТЫ ДЛЯ АДМИНОВ ==========
+
+@app.get("/api/owner/check/{tg_id}")
+async def check_owner(tg_id: int):
+    return {"ok": True, "is_owner": is_owner(tg_id)}
+
+@app.post("/api/admin/login")
+async def admin_login(data: AdminLoginRequest, db: AsyncSession = Depends(get_db)):
+    """Вход обычного админа по логину/паролю."""
+    tg_username_clean = data.tg_username.lstrip('@')
+    res = await db.execute(select(Admin).where(
+        Admin.tg_username == tg_username_clean,
+        Admin.login == data.login,
+        Admin.password == data.password
+    ))
+    admin = res.scalars().first()
+    if not admin:
+        return {"ok": False, "error": "Неверный логин, пароль или username"}
+    return {"ok": True, "name": admin.name}
+
+@app.get("/api/admin/list")
+async def list_admins(requester_id: int, db: AsyncSession = Depends(get_db)):
+    """Список админов — только для овнера."""
+    if not is_owner(requester_id):
+        return {"ok": False, "error": "Доступ запрещен"}
+    res = await db.execute(select(Admin))
+    return {"ok": True, "admins": [
+        {"id": a.id, "name": a.name, "tg_username": a.tg_username, "login": a.login}
+        for a in res.scalars().all()
+    ]}
+
+@app.post("/api/admin/create")
+async def create_admin(data: AdminCreateRequest, db: AsyncSession = Depends(get_db)):
+    """Создать нового админа — только овнер."""
+    if not is_owner(data.requester_id):
+        return {"ok": False, "error": "Доступ запрещен"}
+    tg_clean = data.tg_username.strip().lstrip('@').lower()
+    if not tg_clean or not data.login or not data.password or not data.name:
+        return {"ok": False, "error": "Заполните все поля"}
+    
+    # Проверка на дубликат username
+    check = await db.execute(select(Admin).where(Admin.tg_username == tg_clean))
+    if check.scalars().first():
+        return {"ok": False, "error": "Админ с таким username уже существует"}
+    
+    db.add(Admin(
+        name=data.name.strip(),
+        tg_username=tg_clean,
+        login=data.login.strip(),
+        password=data.password.strip()
+    ))
+    await db.commit()
+    return {"ok": True}
+
+@app.delete("/api/admin/{admin_id}")
+async def delete_admin(admin_id: int, requester_id: int, db: AsyncSession = Depends(get_db)):
+    """Удалить админа — только овнер."""
+    if not is_owner(requester_id):
+        return {"ok": False, "error": "Доступ запрещен"}
+    await db.execute(delete(Admin).where(Admin.id == admin_id))
     await db.commit()
     return {"ok": True}
