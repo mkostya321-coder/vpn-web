@@ -7,6 +7,7 @@ const tgFirstName = tg.initDataUnsafe?.user?.first_name || 'User';
 
 let appState = {
     isAdmin: false,
+    isOwner: false,
     selectedUserId: null,
     user: {
         tg_id: tg.initDataUnsafe?.user?.id || 123456789,
@@ -46,6 +47,12 @@ async function loadInitialData() {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({tg_id: appState.user.tg_id, username: appState.user.tg_username, nickname: appState.user.nickname})
         });
+
+        // Проверка овнера
+        const ownerRes = await fetch(`/api/owner/check/${appState.user.tg_id}`);
+        const ownerData = await ownerRes.json();
+        if (ownerData.ok) appState.isOwner = ownerData.is_owner;
+
         const resUser = await fetch(`/api/user/${appState.user.tg_id}`);
         const dataUser = await resUser.json();
         if (dataUser.ok) {
@@ -108,8 +115,9 @@ function toggleMenu() {
 }
 
 function switchTab(tab) {
-    const adminTabs = ['admin-users', 'admin-tariffs', 'admin-wheel', 'admin-promos'];
+    const adminTabs = ['admin-users', 'admin-tariffs', 'admin-wheel', 'admin-promos', 'admin-list'];
     if (adminTabs.includes(tab) && !appState.isAdmin) return tg.showAlert('Доступ запрещен.');
+    if (tab === 'admin-list' && !appState.isOwner) return tg.showAlert('Только для владельца');
 
     document.querySelectorAll('.main-content > div').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
@@ -120,7 +128,8 @@ function switchTab(tab) {
     const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', 
                      support: 'Поддержка', promo: 'Промокод', 'admin-login': 'Вход', 
                      'admin-users': 'Пользователи', 'admin-tariffs': 'Тарифы', 
-                     'admin-wheel': 'Колесо', 'admin-promos': 'Промокоды', connect: 'Подключение' };
+                     'admin-wheel': 'Колесо', 'admin-promos': 'Промокоды', 
+                     'admin-list': 'Админы', connect: 'Подключение' };
     document.getElementById('header-title').textContent = titles[tab] || '';
 
     if (tab === 'connect' || tab.includes('admin-')) {
@@ -136,6 +145,7 @@ function switchTab(tab) {
     if(tab === 'admin-tariffs') renderAdminTariffs();
     if(tab === 'admin-wheel') renderAdminWheelList();
     if(tab === 'admin-promos') fetchAdminPromos();
+    if(tab === 'admin-list') fetchAdminList();
     if(tab === 'tariffs') renderUserTariffsList();
     if(tab === 'wheel') updateCooldownUI();
     if(tab === 'profile') loadTransactions();
