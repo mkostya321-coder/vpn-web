@@ -13,10 +13,18 @@ from typing import List
 
 from database import init_db, get_db, User, Tariff, WheelItem, async_session
 
-# --- 1. Инициализация планировщика ---
+# --- Класс статики без кеша ---
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 
-# --- 2. Вспомогательные функции ---
 async def send_tg_log(chat_env, text, topic_env=None):
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     CHAT_ID = os.getenv(chat_env)
@@ -56,7 +64,6 @@ async def daily_charge():
         await session.execute(update(Tariff).values(sold_count=0))
         await session.commit()
 
-# --- 3. Lifespan (запуск БД и планировщика) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db() 
@@ -65,15 +72,21 @@ async def lifespan(app: FastAPI):
     yield
     scheduler.shutdown()
 
-# --- 4. СОЗДАНИЕ ПРИЛОЖЕНИЯ (должно быть ДО декораторов @app) ---
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", NoCacheStaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def root():
-    return FileResponse("static/index.html")
+    return FileResponse(
+        "static/index.html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
-# --- 5. Модели запросов ---
+# --- Модели ---
 class UserSync(BaseModel):
     tg_id: int
     username: str
@@ -139,7 +152,7 @@ class AdminGrantTariff(BaseModel):
 class AdminResetCooldown(BaseModel):
     tg_id: int
 
-# --- 6. Эндпоинты ---
+# --- Эндпоинты (все такие же, как были) ---
 @app.post("/api/user/sync")
 async def sync_user(user_data: UserSync, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, user_data.tg_id)
@@ -187,29 +200,22 @@ async def update_balance(data: BalanceUpdate, db: AsyncSession = Depends(get_db)
     if user:
         user.balance += data.amount
         await db.commit()
-        await send_tg_log(
-            "LOG_TOPUP_CHAT_ID", 
-            f"💰 <b>Новое пополнение!</b>\n\n👤 {user.username}\n💵 +{data.amount} ₽",
-            topic_env="LOG_TOPUP_TOPIC_ID"
-        )
+        await send_tg_log("LOG_TOPUP_CHAT_ID", f"💰 <b>Новое пополнение!</b>\n\n👤 {user.username}\n💵 +{data.amount} ₽", topic_env="LOG_TOPUP_TOPIC_ID")
     return {"ok": True, "balance": user.balance if user else 0}
 
 @app.post("/api/tariff/buy")
 async def buy_tariff(data: FixedTariffBuy, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
     tariff = await db.get(Tariff, data.tariff_id)
-    
     if not user or not tariff: return {"ok": False, "error": "Ошибка данных"}
     if user.is_blocked: return {"ok": False, "error": "Вы заблокированы"}
     if user.balance < tariff.price: return {"ok": False, "error": "Недостаточно средств"}
     if tariff.limit_count > 0 and tariff.sold_count >= tariff.limit_count: return {"ok": False, "error": "Товар распродан"}
-
     user.balance -= tariff.price
     user.active_fixed_expires = datetime.now() + timedelta(days=tariff.days)
     user.active_fixed_desc = tariff.desc
     user.active_fixed_devices = tariff.devices
     tariff.sold_count += 1
-    
     await db.commit()
     return {"ok": True, "balance": user.balance}
 
@@ -218,23 +224,18 @@ async def cancel_tariff(data: TariffCancel, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
     if not user or not user.active_fixed_expires:
         return {"ok": False, "error": "Нет активного тарифа"}
-    
     res = await db.execute(select(Tariff).where(Tariff.desc == user.active_fixed_desc))
     tariff = res.scalars().first()
     if not tariff: return {"ok": False, "error": "Тариф не найден"}
-
     now = datetime.now()
     left_seconds = (user.active_fixed_expires - now).total_seconds()
     left_days = max(0, left_seconds / (24 * 60 * 60))
-    
     price_per_day = tariff.price / tariff.days
     refund = round(price_per_day * left_days, 1)
-
     user.balance += refund
     user.active_fixed_expires = None
     user.active_fixed_desc = None
     user.active_fixed_devices = None
-    
     await db.commit()
     return {"ok": True, "refund": refund, "balance": user.balance}
 
@@ -280,21 +281,11 @@ async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, data.tg_id)
     if user:
         user.last_spin = datetime.now()
-        
         if not data.is_other_prize:
             user.balance += data.prize_value
-            await send_tg_log(
-                "LOG_WHEEL_CHAT_ID", 
-                f"🎰 <b>Колесо удачи!</b>\n\n👤 {user.username}\n💰 Выигрыш: {data.prize_label}",
-                topic_env="LOG_WHEEL_TOPIC_ID"
-            )
+            await send_tg_log("LOG_WHEEL_CHAT_ID", f"🎰 <b>Колесо удачи!</b>\n\n👤 {user.username}\n💰 Выигрыш: {data.prize_label}", topic_env="LOG_WHEEL_TOPIC_ID")
         else:
-            await send_tg_log(
-                "LOG_OTHER_CHAT_ID", 
-                f"🎁 <b>Заявка на выдачу приза!</b>\n\n👤 Пользователь: {user.username}\n🏆 Приз: {data.prize_label}\n\n<i>⚠️ Требуется ручная выдача в течение 48 часов.</i>",
-                topic_env="LOG_OTHER_TOPIC_ID"
-            )
-        
+            await send_tg_log("LOG_OTHER_CHAT_ID", f"🎁 <b>Заявка на выдачу приза!</b>\n\n👤 Пользователь: {user.username}\n🏆 Приз: {data.prize_label}\n\n<i>⚠️ Требуется ручная выдача в течение 48 часов.</i>", topic_env="LOG_OTHER_TOPIC_ID")
         await db.commit()
     return {"ok": True}
 
@@ -342,31 +333,15 @@ async def send_support(req: SupportRequest):
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     CHAT_ID = os.getenv("SUPPORT_CHAT_ID")
     TOPIC_ID = os.getenv("SUPPORT_TOPIC_ID")
-    
-    if not BOT_TOKEN:
-        return {"ok": False, "error": "Нет BOT_TOKEN в Amvera (нажми Собрать!)"}
-    if not CHAT_ID:
-        return {"ok": False, "error": "Нет SUPPORT_CHAT_ID в Amvera (нажми Собрать!)"}
-
-    text = (
-        f"🆘 Обращение в поддержку!\n\n"
-        f"👤 От: {req.username} (ID: {req.user_id})\n"
-        f"📌 Тема: {req.subject}\n\n"
-        f"💬 Сообщение:\n{req.message}"
-    )
-    
+    if not BOT_TOKEN: return {"ok": False, "error": "Нет BOT_TOKEN"}
+    if not CHAT_ID: return {"ok": False, "error": "Нет SUPPORT_CHAT_ID"}
+    text = f"🆘 Обращение в поддержку!\n\n👤 От: {req.username} (ID: {req.user_id})\n📌 Тема: {req.subject}\n\n💬 Сообщение:\n{req.message}"
     payload = {"chat_id": CHAT_ID, "text": text}
-    
     if TOPIC_ID and TOPIC_ID.strip() != "":
         try: payload["message_thread_id"] = int(TOPIC_ID)
         except ValueError: pass
-
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload) as resp:
-            if resp.status == 200: 
-                return {"ok": True}
-            else: 
-                err = await resp.text()
-                print(f"Ошибка ТГ поддержки: {err}")
-                return {"ok": False, "error": f"Telegram: {err}"}
+            if resp.status == 200: return {"ok": True}
+            else: return {"ok": False, "error": f"Telegram: {await resp.text()}"}
