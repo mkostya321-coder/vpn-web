@@ -3,20 +3,46 @@ function handleAdminAuthClick() {
         appState.isAdmin = false;
         document.getElementById('admin-menu').style.display = 'none';
         document.getElementById('admin-auth-btn').innerHTML = '⚙️ Войти в АдмПрофиль';
+        document.getElementById('tab-admin-list').style.display = 'none';
         switchTab('home');
-    } else switchTab('admin-login');
+    } else {
+        if (appState.isOwner) {
+            // Авто-вход для овнера
+            appState.isAdmin = true;
+            document.getElementById('admin-menu').style.display = 'block';
+            document.getElementById('admin-auth-btn').innerHTML = '🚪 Выйти из АдмПрофиль';
+            document.getElementById('tab-admin-list').style.display = 'flex';
+            tg.showAlert('Вы вошли как владелец');
+            switchTab('home');
+        } else {
+            switchTab('admin-login');
+        }
+    }
 }
 
-function checkAdminLogin() {
-    const login = document.getElementById('admin-login').value;
-    const pass = document.getElementById('admin-pass').value;
-    if (login === 'admin' && pass === 'admin') {
-        appState.isAdmin = true;
-        document.getElementById('admin-menu').style.display = 'block';
-        document.getElementById('admin-auth-btn').innerHTML = '🚪 Выйти из АдмПрофиль';
-        tg.showAlert('Успешный вход!');
-        switchTab('home');
-    } else tg.showAlert('Неверный логин или пароль!');
+async function checkAdminLogin() {
+    const login = document.getElementById('admin-login').value.trim();
+    const pass = document.getElementById('admin-pass').value.trim();
+    const tgUsername = appState.user.tg_username.replace('@', '');
+    
+    if (!login || !pass) return tg.showAlert('Введите логин и пароль');
+    
+    try {
+        const res = await fetch('/api/admin/login', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ tg_username: tgUsername, login: login, password: pass })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            appState.isAdmin = true;
+            document.getElementById('admin-menu').style.display = 'block';
+            document.getElementById('admin-auth-btn').innerHTML = '🚪 Выйти из АдмПрофиль';
+            tg.showAlert(`Добро пожаловать, ${data.name}!`);
+            switchTab('home');
+        } else {
+            tg.showAlert(data.error || 'Неверные данные');
+        }
+    } catch(e) { tg.showAlert('Ошибка сети'); }
 }
 
 // Пользователи
@@ -65,7 +91,7 @@ async function openUserModal(id) {
     const select = document.getElementById('admin-tariff-select');
     select.innerHTML = appState.tariffs.map(t => `<option value="${t.id}">${t.desc} (${t.price}₽)</option>`).join('');
     window.currentManageUser = user;
-    // Загружаем активные промо
+    
     const res = await fetch(`/api/admin/user_promos/${id}`);
     const data = await res.json();
     const promosDiv = document.getElementById('user-promos-in-modal');
@@ -135,8 +161,6 @@ async function adminActivatePromoOnUser() {
     if (!window.currentManageUser) return;
     const code = document.getElementById('admin-promo-for-user').value.trim().toUpperCase();
     if (!code) return tg.showAlert('Введите код');
-    // Админ может активировать без 24ч кулдауна — вызываем тот же эндпоинт, но он проверяет кулдаун.
-    // Для админа лучше сделать обходной путь: используем прямой insert через отдельный эндпоинт.
     const res = await fetch('/api/promo/activate', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({user_id: window.currentManageUser.id, code})
@@ -315,4 +339,66 @@ async function createPromoCode() {
 async function deletePromoCode(id) {
     await fetch(`/api/admin/promos/${id}`, {method: 'DELETE'});
     fetchAdminPromos();
+}
+
+// ========== УПРАВЛЕНИЕ АДМИНАМИ (только овнер) ==========
+
+async function fetchAdminList() {
+    const content = document.getElementById('admin-list-content');
+    content.innerHTML = 'Загрузка...';
+    try {
+        const res = await fetch(`/api/admin/list?requester_id=${appState.user.tg_id}`);
+        const data = await res.json();
+        if (!data.ok) { content.innerHTML = '<div style="color:var(--danger);">' + data.error + '</div>'; return; }
+        if (data.admins.length === 0) { content.innerHTML = '<div style="color:var(--text-muted);">Пока нет админов</div>'; return; }
+        content.innerHTML = data.admins.map(a => `
+            <div class="user-row" style="justify-content:flex-start;">
+                <div style="flex:1;">
+                    <div style="font-weight:bold;">${a.name}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">
+                        @${a.tg_username} | Логин: <b>${a.login}</b>
+                    </div>
+                </div>
+                <button class="btn btn-danger" style="width:auto; padding:5px 10px; font-size:12px;" onclick="deleteAdminById(${a.id})">Удалить</button>
+            </div>
+        `).join('');
+    } catch(e) { content.innerHTML = 'Ошибка'; }
+}
+
+async function createNewAdmin() {
+    const name = document.getElementById('new-admin-name').value.trim();
+    const tgUser = document.getElementById('new-admin-tg').value.trim();
+    const login = document.getElementById('new-admin-login').value.trim();
+    const password = document.getElementById('new-admin-password').value.trim();
+    
+    if (!name || !tgUser || !login || !password) return tg.showAlert('Заполните все поля!');
+    
+    try {
+        const res = await fetch('/api/admin/create', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                requester_id: appState.user.tg_id,
+                name, tg_username: tgUser, login, password
+            })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            tg.showAlert('✅ Админ создан!');
+            document.getElementById('new-admin-name').value = '';
+            document.getElementById('new-admin-tg').value = '';
+            document.getElementById('new-admin-login').value = '';
+            document.getElementById('new-admin-password').value = '';
+            fetchAdminList();
+        } else tg.showAlert('❌ ' + data.error);
+    } catch(e) { tg.showAlert('Ошибка сети'); }
+}
+
+async function deleteAdminById(id) {
+    tg.showConfirm('Удалить админа?', async (ok) => {
+        if (!ok) return;
+        const res = await fetch(`/api/admin/${id}?requester_id=${appState.user.tg_id}`, {method: 'DELETE'});
+        const data = await res.json();
+        if (data.ok) { tg.showAlert('Удалён!'); fetchAdminList(); }
+        else tg.showAlert(data.error);
+    });
 }
