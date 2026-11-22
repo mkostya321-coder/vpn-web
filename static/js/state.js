@@ -12,14 +12,14 @@ let appState = {
         tg_id: tg.initDataUnsafe?.user?.id || 123456789,
         tg_username: tg.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : '@no_username',
         nickname: savedNickname || tgFirstName,
-        balance: 0, 
+        balance: 0,
         is_blocked: false,
         selectedDevices: 1,
         selectedPriceDay: 6,
         activeFixed: null,
         activeFixedDevices: 1,
+        activeDiscount: 0,
         lastSpin: Number(localStorage.getItem('nc_vpn_lastSpin')) || 0,
-        topupHistory: JSON.parse(localStorage.getItem('nc_vpn_topup_history')) || [],
         wheelHistory: JSON.parse(localStorage.getItem('nc_vpn_wheel_history')) || []
     },
     allUsers: [],
@@ -43,30 +43,54 @@ document.getElementById('welcome-message').innerHTML = `Привет, <b>${appSt
 async function loadInitialData() {
     try {
         await fetch('/api/user/sync', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: appState.user.tg_id, username: appState.user.tg_username, nickname: appState.user.nickname })
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({tg_id: appState.user.tg_id, username: appState.user.tg_username, nickname: appState.user.nickname})
         });
         const resUser = await fetch(`/api/user/${appState.user.tg_id}`);
         const dataUser = await resUser.json();
         if (dataUser.ok) {
             appState.user.balance = dataUser.user.balance;
             appState.user.is_blocked = dataUser.user.is_blocked;
-            appState.user.activeFixed = dataUser.user.active_fixed_expires ? { expires: new Date(dataUser.user.active_fixed_expires).getTime(), desc: dataUser.user.active_fixed_desc } : null;
+            appState.user.activeFixed = dataUser.user.active_fixed_expires 
+                ? { expires: new Date(dataUser.user.active_fixed_expires).getTime(), desc: dataUser.user.active_fixed_desc } 
+                : null;
             appState.user.activeFixedDevices = dataUser.user.active_fixed_devices || 1;
-            if(dataUser.user.last_spin) appState.user.lastSpin = new Date(dataUser.user.last_spin).getTime();
+            appState.user.activeDiscount = dataUser.user.active_discount || 0;
+            if (dataUser.user.last_spin) appState.user.lastSpin = new Date(dataUser.user.last_spin).getTime();
         }
 
         const resTariffs = await fetch('/api/tariffs');
         const dataTariffs = await resTariffs.json();
-        if(dataTariffs.ok) appState.tariffs = dataTariffs.tariffs;
+        if (dataTariffs.ok) appState.tariffs = dataTariffs.tariffs;
 
         const resWheel = await fetch('/api/wheel_items');
         const dataWheel = await resWheel.json();
-        if(dataWheel.ok) appState.wheelItems = dataWheel.items;
+        if (dataWheel.ok) appState.wheelItems = dataWheel.items;
 
         updateUI();
         drawWheel();
         updateCooldownUI();
+        loadTransactions();
+    } catch(e) { console.error(e); }
+}
+
+async function loadTransactions() {
+    try {
+        const res = await fetch(`/api/user/${appState.user.tg_id}/transactions`);
+        const data = await res.json();
+        const list = document.getElementById('transactions-history');
+        if (!data.ok || !data.transactions || data.transactions.length === 0) {
+            list.innerHTML = '<li style="color:var(--text-muted);">Пока пусто</li>';
+            return;
+        }
+        const icons = { topup: '💰 Пополнение', admin_add: '👑 Адм. пополнение', admin_set: '👑 Адм. изменение', 
+                        wheel_win: '🎰 Колесо', tariff_buy: '💳 Покупка', tariff_cancel: '↩️ Возврат', promo_bonus: '🎁 Промокод' };
+        list.innerHTML = data.transactions.map(t => {
+            const d = new Date(t.created_at).toLocaleDateString();
+            const sign = t.amount >= 0 ? '+' : '';
+            const color = t.amount >= 0 ? 'var(--success)' : 'var(--danger)';
+            return `<li><span>${d} — ${icons[t.type] || t.type}</span><b style="color:${color};">${sign}${t.amount.toFixed(1)} ₽</b></li>`;
+        }).join('');
     } catch(e) { console.error(e); }
 }
 
@@ -84,7 +108,7 @@ function toggleMenu() {
 }
 
 function switchTab(tab) {
-    const adminTabs = ['admin-users', 'admin-tariffs', 'admin-wheel'];
+    const adminTabs = ['admin-users', 'admin-tariffs', 'admin-wheel', 'admin-promos'];
     if (adminTabs.includes(tab) && !appState.isAdmin) return tg.showAlert('Доступ запрещен.');
 
     document.querySelectorAll('.main-content > div').forEach(el => el.style.display = 'none');
@@ -93,8 +117,11 @@ function switchTab(tab) {
     document.getElementById('view-' + tab).style.display = 'block';
     if(document.getElementById('tab-' + tab)) document.getElementById('tab-' + tab).classList.add('active');
     
-    const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', support: 'Поддержка', 'admin-login': 'Вход', 'admin-users': 'Пользователи', 'admin-tariffs': 'Тарифы', 'admin-wheel': 'Колесо', connect: 'Подключение' };
-    document.getElementById('header-title').textContent = titles[tab];
+    const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', 
+                     support: 'Поддержка', promo: 'Промокод', 'admin-login': 'Вход', 
+                     'admin-users': 'Пользователи', 'admin-tariffs': 'Тарифы', 
+                     'admin-wheel': 'Колесо', 'admin-promos': 'Промокоды', connect: 'Подключение' };
+    document.getElementById('header-title').textContent = titles[tab] || '';
 
     if (tab === 'connect' || tab.includes('admin-')) {
         document.getElementById('burger-btn').style.display = 'none';
@@ -108,8 +135,10 @@ function switchTab(tab) {
     if(tab === 'admin-users') fetchAdminUsers();
     if(tab === 'admin-tariffs') renderAdminTariffs();
     if(tab === 'admin-wheel') renderAdminWheelList();
+    if(tab === 'admin-promos') fetchAdminPromos();
     if(tab === 'tariffs') renderUserTariffsList();
     if(tab === 'wheel') updateCooldownUI();
+    if(tab === 'profile') loadTransactions();
     updateUI();
 }
 
@@ -118,12 +147,8 @@ function updateUI() {
     document.getElementById('user-nickname').textContent = appState.user.nickname;
     document.getElementById('user-tg-username').textContent = appState.user.tg_username;
 
-    const topupList = document.getElementById('topup-history');
-    if (appState.user.topupHistory.length === 0) topupList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
-    else topupList.innerHTML = appState.user.topupHistory.map(item => `<li><span>${item.date}</span><b style="color:var(--success);">+${item.amount} ₽</b></li>`).join('');
-
     const wheelList = document.getElementById('wheel-history');
-    if (appState.user.wheelHistory.length === 0) wheelList.innerHTML = '<li style="color: var(--text-muted);">Пока пусто</li>';
+    if (appState.user.wheelHistory.length === 0) wheelList.innerHTML = '<li style="color:var(--text-muted);">Пока пусто</li>';
     else wheelList.innerHTML = appState.user.wheelHistory.map(item => `<li><span>${item.date}</span><span style="color:var(--promo);">${item.prize}</span></li>`).join('');
 
     const now = Date.now();
@@ -139,7 +164,7 @@ function updateUI() {
         const days = Math.floor(appState.user.balance / appState.user.selectedPriceDay);
         document.getElementById('days-left').textContent = days + ' дней';
         const mainPlans = document.getElementById('user-plans-container');
-        mainPlans.innerHTML = appState.dailyPlans.map((t, i) => `
+        mainPlans.innerHTML = appState.dailyPlans.map((t) => `
             <div class="plan-btn ${t.devices === appState.user.selectedDevices ? 'active' : ''}" onclick="selectDailyPlan(${t.devices}, ${t.priceDay})">
                 <div class="plan-devices">${t.devices} устр.</div>
                 <div class="plan-price-day">${t.priceDay} ₽/день</div>
