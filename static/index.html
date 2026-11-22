@@ -141,6 +141,21 @@
             <div>
                 <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">Ваш баланс</div>
                 <div class="balance-value" id="home-balance">Загрузка...</div>
+                <div id="view-admin-list" style="display: none;">
+    <div class="card">
+        <h3 style="margin-bottom:15px; color:var(--promo);">👑 Управление админами</h3>
+        <h4 style="margin-bottom:10px;">Создать админа:</h4>
+        <input type="text" id="new-admin-name" placeholder="Имя (отображается в списке)">
+        <input type="text" id="new-admin-tg" placeholder="Telegram username (без @)">
+        <input type="text" id="new-admin-login" placeholder="Логин для входа">
+        <input type="text" id="new-admin-password" placeholder="Пароль">
+        <button class="btn btn-success" onclick="createNewAdmin()">Создать</button>
+    </div>
+    <div class="card">
+        <h4 style="margin-bottom:10px;">Список админов:</h4>
+        <div id="admin-list-content">Загрузка...</div>
+    </div>
+</div>
             </div>
             <button class="btn" style="width: auto;" onclick="topUpBalance()">+ Пополнить</button>
         </div>
