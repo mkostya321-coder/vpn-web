@@ -8,7 +8,6 @@ if not os.path.exists("/data"):
     os.makedirs("/data")
 
 DATABASE_URL = "sqlite+aiosqlite:////data/vpn_users.db"
-
 engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
@@ -17,7 +16,6 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = "users"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(nullable=True)
     nickname: Mapped[str] = mapped_column(default="User")
@@ -47,34 +45,63 @@ class WheelItem(Base):
     color: Mapped[str]
     value: Mapped[int]
     order: Mapped[int] = mapped_column(default=0)
-    prize_type: Mapped[str] = mapped_column(default="topup") # НОВОЕ: "topup" или "other"
+    prize_type: Mapped[str] = mapped_column(default="topup")
+
+class PromoCode(Base):
+    __tablename__ = "promo_codes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(unique=True, index=True)
+    discount_percent: Mapped[int] = mapped_column(default=0)
+    balance_bonus: Mapped[float] = mapped_column(default=0.0)
+    usage_limit: Mapped[int] = mapped_column(default=0)
+    used_count: Mapped[int] = mapped_column(default=0)
+    valid_days: Mapped[int] = mapped_column(default=0)
+    is_active: Mapped[bool] = mapped_column(default=True)
+
+class UserPromo(Base):
+    __tablename__ = "user_promos"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(index=True)
+    promo_code: Mapped[str] = mapped_column(index=True)
+    used_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    expires_at: Mapped[datetime] = mapped_column(nullable=True)
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(index=True)
+    amount: Mapped[float]
+    type: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
-        # Миграция для старых баз
+        # Миграции для users
         result = await conn.execute(text("PRAGMA table_info(users)"))
-        columns = [row[1] for row in result.fetchall()]
-        if 'is_blocked' not in columns:
+        cols = [row[1] for row in result.fetchall()]
+        if 'is_blocked' not in cols:
             await conn.execute(text("ALTER TABLE users ADD COLUMN is_blocked BOOLEAN DEFAULT 0"))
-        if 'active_fixed_devices' not in columns:
+        if 'active_fixed_devices' not in cols:
             await conn.execute(text("ALTER TABLE users ADD COLUMN active_fixed_devices INTEGER"))
-            
+        
+        # Миграции для tariffs
         result = await conn.execute(text("PRAGMA table_info(tariffs)"))
-        columns = [row[1] for row in result.fetchall()]
-        if 'limit_count' not in columns:
+        cols = [row[1] for row in result.fetchall()]
+        if 'limit_count' not in cols:
             await conn.execute(text("ALTER TABLE tariffs ADD COLUMN limit_count INTEGER DEFAULT 0"))
-        if 'sold_count' not in columns:
+        if 'sold_count' not in cols:
             await conn.execute(text("ALTER TABLE tariffs ADD COLUMN sold_count INTEGER DEFAULT 0"))
-            
+        
+        # Миграции для wheel_items
         result = await conn.execute(text("PRAGMA table_info(wheel_items)"))
-        columns = [row[1] for row in result.fetchall()]
-        if 'prize_type' not in columns:
+        cols = [row[1] for row in result.fetchall()]
+        if 'prize_type' not in cols:
             await conn.execute(text("ALTER TABLE wheel_items ADD COLUMN prize_type VARCHAR DEFAULT 'topup'"))
-            
-        print("Проверка базы данных завершена.")
-
+        
+        print("База данных готова.")
+        
         from sqlalchemy import select
         async with async_session() as session:
             res = await session.execute(select(Tariff))
@@ -82,10 +109,10 @@ async def init_db():
                 session.add(Tariff(price=350, desc='3 Месяца на 4 устройства', days=90, devices=4, limit_count=10))
                 session.add(Tariff(price=500, desc='1 Год на 5 устройств', days=365, devices=5, limit_count=5))
                 await session.commit()
-                
-            res_wheel = await session.execute(select(WheelItem))
-            if not res_wheel.scalars().first():
-                default_items = [
+            
+            res = await session.execute(select(WheelItem))
+            if not res.scalars().first():
+                items = [
                     WheelItem(label='186₽', color='#ff3b30', value=186, order=0, prize_type='topup'),
                     WheelItem(label='Lose', color='#555555', value=0, order=1, prize_type='topup'),
                     WheelItem(label='6₽', color='#34c759', value=6, order=2, prize_type='topup'),
@@ -97,9 +124,9 @@ async def init_db():
                     WheelItem(label='Lose', color='#555555', value=0, order=8, prize_type='topup'),
                     WheelItem(label='6₽', color='#34c759', value=6, order=9, prize_type='topup'),
                     WheelItem(label='10₽', color='#007aff', value=10, order=10, prize_type='topup'),
-                    WheelItem(label='Lose', color='#555555', value=0, order=11, prize_type='topup')
+                    WheelItem(label='Lose', color='#555555', value=0, order=11, prize_type='topup'),
                 ]
-                session.add_all(default_items)
+                session.add_all(items)
                 await session.commit()
 
 async def get_db():
