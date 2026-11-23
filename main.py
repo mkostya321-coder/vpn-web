@@ -88,12 +88,12 @@ class TariffCancel(BaseModel):
     tg_id: int
 class SpinResult(BaseModel):
     tg_id: int; prize_value: float; prize_label: str; is_other_prize: bool = False
+class WheelClaim(BaseModel):
+    tg_id: int; prize_value: float
 class SupportRequest(BaseModel):
     user_id: int; username: str; subject: str; message: str
 class CreateUserRequest(BaseModel):
     telegram_id: int; devices: int = 1
-class GambleRequest(BaseModel):
-    tg_id: int; original_win: float; won_gamble: bool
 class TariffCreate(BaseModel):
     price: int; desc: str; days: int; devices: int; limit_count: int
 class WheelItemCreate(BaseModel):
@@ -292,23 +292,37 @@ async def reset_all_cooldowns(db: AsyncSession = Depends(get_db)):
 # --- Колесо ---
 @app.post("/api/wheel/spin")
 async def record_spin(data: SpinResult, db: AsyncSession = Depends(get_db)):
+    """Только фиксирует кулдаун и (для призов 'other') отправляет лог.
+    Баланс НЕ начисляет! Начисление идёт только в /api/wheel/claim."""
     u = await db.get(User, data.tg_id)
     if u:
         u.last_spin = datetime.now()
-        if not data.is_other_prize:
-            u.balance += data.prize_value
-            await add_transaction(db, u.id, data.prize_value, "wheel_win")
-            await send_tg_log("LOG_WHEEL_CHAT_ID", f"🎰 <b>Колесо</b>\n\n👤 {u.username}\n💰 {data.prize_label}", "LOG_WHEEL_TOPIC_ID")
-        else:
-            await send_tg_log("LOG_OTHER_CHAT_ID", f"🎁 <b>Заявка</b>\n\n👤 {u.username}\n🏆 {data.prize_label}\n\n<i>Ручная выдача 48ч.</i>", "LOG_OTHER_TOPIC_ID")
+        if data.is_other_prize:
+            await send_tg_log(
+                "LOG_OTHER_CHAT_ID",
+                f"🎁 <b>Заявка</b>\n\n👤 {u.username}\n🏆 {data.prize_label}\n\n<i>Ручная выдача 48ч.</i>",
+                "LOG_OTHER_TOPIC_ID"
+            )
         await db.commit()
     return {"ok": True}
 
-@app.post("/api/wheel/gamble")
-async def gamble(data: GambleRequest, db: AsyncSession = Depends(get_db)):
+@app.post("/api/wheel/claim")
+async def claim_wheel_win(data: WheelClaim, db: AsyncSession = Depends(get_db)):
+    """Начисляет выигрыш только когда юзер нажал «Забрать».
+    Если юзер проиграл в апгрейде — этот эндпоинт не вызывается,
+    и никакая транзакция в историю не попадает."""
     u = await db.get(User, data.tg_id)
-    if u and not data.won_gamble: u.balance -= data.original_win; await db.commit()
-    return {"ok": True}
+    if not u or data.prize_value <= 0:
+        return {"ok": True, "balance": u.balance if u else 0}
+    u.balance += data.prize_value
+    await add_transaction(db, u.id, data.prize_value, "wheel_win")
+    await send_tg_log(
+        "LOG_WHEEL_CHAT_ID",
+        f"🎰 <b>Колесо</b>\n\n👤 {u.username}\n💰 +{data.prize_value}₽",
+        "LOG_WHEEL_TOPIC_ID"
+    )
+    await db.commit()
+    return {"ok": True, "balance": u.balance}
 
 @app.get("/api/wheel_items")
 async def get_wheel_items(db: AsyncSession = Depends(get_db)):
@@ -338,6 +352,7 @@ async def update_wheel_order(data: WheelOrderUpdate, db: AsyncSession = Depends(
 # --- Прочее ---
 @app.post("/api/create-vpn")
 async def create_vpn(req: CreateUserRequest):
+    # TODO: интеграция с Remnawave
     return {"ok": True, "subscription_url": f"vless://TEST-LINK-{req.devices}-DEV@127.0.0.1:443"}
 
 @app.post("/api/support")
