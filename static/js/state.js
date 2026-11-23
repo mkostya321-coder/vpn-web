@@ -5,6 +5,9 @@ tg.expand();
 const savedNickname = localStorage.getItem('nc_vpn_nickname');
 const tgFirstName = tg.initDataUnsafe?.user?.first_name || 'User';
 
+let showAllTransactions = false;
+let showAllWheel = false;
+
 let appState = {
     isAdmin: false,
     isOwner: false,
@@ -20,7 +23,8 @@ let appState = {
         activeFixed: null,
         activeFixedDevices: 1,
         activeDiscount: 0,
-        lastSpin: Number(localStorage.getItem('nc_vpn_lastSpin')) || 0,
+        discountExpires: null,
+        lastSpin: 0,
         wheelHistory: JSON.parse(localStorage.getItem('nc_vpn_wheel_history')) || []
     },
     allUsers: [],
@@ -48,7 +52,6 @@ async function loadInitialData() {
             body: JSON.stringify({tg_id: appState.user.tg_id, username: appState.user.tg_username, nickname: appState.user.nickname})
         });
 
-        // Проверка овнера
         const ownerRes = await fetch(`/api/owner/check/${appState.user.tg_id}`);
         const ownerData = await ownerRes.json();
         if (ownerData.ok) appState.isOwner = ownerData.is_owner;
@@ -63,7 +66,8 @@ async function loadInitialData() {
                 : null;
             appState.user.activeFixedDevices = dataUser.user.active_fixed_devices || 1;
             appState.user.activeDiscount = dataUser.user.active_discount || 0;
-            if (dataUser.user.last_spin) appState.user.lastSpin = new Date(dataUser.user.last_spin).getTime();
+            appState.user.discountExpires = dataUser.user.discount_expires || null;
+            appState.user.lastSpin = dataUser.user.last_spin ? new Date(dataUser.user.last_spin).getTime() : 0;
         }
 
         const resTariffs = await fetch('/api/tariffs');
@@ -86,19 +90,46 @@ async function loadTransactions() {
         const res = await fetch(`/api/user/${appState.user.tg_id}/transactions`);
         const data = await res.json();
         const list = document.getElementById('transactions-history');
+        const btn = document.getElementById('show-all-transactions');
+        
         if (!data.ok || !data.transactions || data.transactions.length === 0) {
             list.innerHTML = '<li style="color:var(--text-muted);">Пока пусто</li>';
+            btn.style.display = 'none';
             return;
         }
-        const icons = { topup: '💰 Пополнение', admin_add: '👑 Адм. пополнение', admin_set: '👑 Адм. изменение', 
+        
+        const icons = { topup: '💰 Пополнение', admin_add: '👑 Адм. пополнение', admin_set: '👑 Адм. изменение',
                         wheel_win: '🎰 Колесо', tariff_buy: '💳 Покупка', tariff_cancel: '↩️ Возврат', promo_bonus: '🎁 Промокод' };
-        list.innerHTML = data.transactions.map(t => {
+        
+        let items = data.transactions;
+        if (!showAllTransactions && items.length > 4) items = items.slice(0, 4);
+        
+        list.innerHTML = items.map(t => {
             const d = new Date(t.created_at).toLocaleDateString();
             const sign = t.amount >= 0 ? '+' : '';
             const color = t.amount >= 0 ? 'var(--success)' : 'var(--danger)';
-            return `<li><span>${d} — ${icons[t.type] || t.type}</span><b style="color:${color};">${sign}${t.amount.toFixed(1)} ₽</b></li>`;
+            let label = icons[t.type] || t.type;
+            if (t.type && t.type.startsWith('promo_discount_')) {
+                const pct = t.type.replace('promo_discount_', '');
+                label = `🎁 Промокод (Скид. ${pct}%)`;
+            }
+            const amountHtml = t.amount !== 0 ? ` <b style="color:${color};">${sign}${t.amount.toFixed(1)} ₽</b>` : '';
+            return `<li><span>${d} — ${label}</span>${amountHtml}</li>`;
         }).join('');
+        
+        btn.style.display = data.transactions.length > 4 ? 'block' : 'none';
+        btn.textContent = showAllTransactions ? 'Свернуть' : 'Показать все';
     } catch(e) { console.error(e); }
+}
+
+function toggleAllTransactions() {
+    showAllTransactions = !showAllTransactions;
+    loadTransactions();
+}
+
+function toggleAllWheel() {
+    showAllWheel = !showAllWheel;
+    updateUI();
 }
 
 function closeWelcome() {
@@ -125,10 +156,10 @@ function switchTab(tab) {
     document.getElementById('view-' + tab).style.display = 'block';
     if(document.getElementById('tab-' + tab)) document.getElementById('tab-' + tab).classList.add('active');
     
-    const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы', 
-                     support: 'Поддержка', promo: 'Промокод', 'admin-login': 'Вход', 
-                     'admin-users': 'Пользователи', 'admin-tariffs': 'Тарифы', 
-                     'admin-wheel': 'Колесо', 'admin-promos': 'Промокоды', 
+    const titles = { home: 'Главная', profile: 'Профиль', wheel: 'Колесо', tariffs: 'Тарифы',
+                     support: 'Поддержка', promo: 'Промокод', 'admin-login': 'Вход',
+                     'admin-users': 'Пользователи', 'admin-tariffs': 'Тарифы',
+                     'admin-wheel': 'Колесо', 'admin-promos': 'Промокоды',
                      'admin-list': 'Админы', connect: 'Подключение' };
     document.getElementById('header-title').textContent = titles[tab] || '';
 
@@ -157,9 +188,31 @@ function updateUI() {
     document.getElementById('user-nickname').textContent = appState.user.nickname;
     document.getElementById('user-tg-username').textContent = appState.user.tg_username;
 
+    // Скидка
+    const discountCard = document.getElementById('discount-card');
+    if (appState.user.activeDiscount > 0 && discountCard) {
+        discountCard.style.display = 'block';
+        const exp = appState.user.discountExpires ? new Date(appState.user.discountExpires).toLocaleDateString() : '';
+        document.getElementById('discount-info').innerHTML = `Скидка <b>${appState.user.activeDiscount}%</b> на тарифы${exp ? ` до ${exp}` : ''}`;
+    } else if (discountCard) {
+        discountCard.style.display = 'none';
+    }
+
+    // История колеса (4 или все)
     const wheelList = document.getElementById('wheel-history');
-    if (appState.user.wheelHistory.length === 0) wheelList.innerHTML = '<li style="color:var(--text-muted);">Пока пусто</li>';
-    else wheelList.innerHTML = appState.user.wheelHistory.map(item => `<li><span>${item.date}</span><span style="color:var(--promo);">${item.prize}</span></li>`).join('');
+    const wheelBtn = document.getElementById('show-all-wheel');
+    if (appState.user.wheelHistory.length === 0) {
+        wheelList.innerHTML = '<li style="color:var(--text-muted);">Пока пусто</li>';
+        if (wheelBtn) wheelBtn.style.display = 'none';
+    } else {
+        let items = appState.user.wheelHistory;
+        if (!showAllWheel && items.length > 4) items = items.slice(0, 4);
+        wheelList.innerHTML = items.map(item => `<li><span>${item.date}</span><span style="color:var(--promo);">${item.prize}</span></li>`).join('');
+        if (wheelBtn) {
+            wheelBtn.style.display = appState.user.wheelHistory.length > 4 ? 'block' : 'none';
+            wheelBtn.textContent = showAllWheel ? 'Свернуть' : 'Показать все';
+        }
+    }
 
     const now = Date.now();
     if (appState.user.activeFixed && appState.user.activeFixed.expires > now) {
