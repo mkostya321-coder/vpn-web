@@ -7,7 +7,6 @@ function handleAdminAuthClick() {
         switchTab('home');
     } else {
         if (appState.isOwner) {
-            // Авто-вход для овнера
             appState.isAdmin = true;
             document.getElementById('admin-menu').style.display = 'block';
             document.getElementById('admin-auth-btn').innerHTML = '🚪 Выйти из АдмПрофиль';
@@ -23,7 +22,7 @@ function handleAdminAuthClick() {
 async function checkAdminLogin() {
     const login = document.getElementById('admin-login').value.trim();
     const pass = document.getElementById('admin-pass').value.trim();
-    const tgUsername = appState.user.tg_username.replace('@', '');
+    const tgUsername = appState.user.tg_username.replace('@', '').toLowerCase();
     
     if (!login || !pass) return tg.showAlert('Введите логин и пароль');
     
@@ -45,7 +44,6 @@ async function checkAdminLogin() {
     } catch(e) { tg.showAlert('Ошибка сети'); }
 }
 
-// Пользователи
 async function fetchAdminUsers() {
     const list = document.getElementById('admin-users-list');
     list.innerHTML = 'Загрузка...';
@@ -143,7 +141,22 @@ async function adminResetUserCd() {
         body: JSON.stringify({tg_id: window.currentManageUser.id})
     });
     tg.showAlert('Кулдаун сброшен!');
+    fetchAdminUsers();
     closeUserModal();
+}
+
+async function adminCancelUserTariff() {
+    if (!window.currentManageUser) return;
+    tg.showConfirm('Снять тариф с пользователя БЕЗ возврата денег?', async (ok) => {
+        if (!ok) return;
+        await fetch('/api/admin/cancel_tariff', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ tg_id: window.currentManageUser.id })
+        });
+        tg.showAlert('Тариф снят');
+        fetchAdminUsers();
+        closeUserModal();
+    });
 }
 
 async function adminGiveTariff() {
@@ -288,10 +301,13 @@ function toggleWheelVisibility() {
     updateWheelState();
 }
 
-function resetAllCooldownsAdmin() {
+async function resetAllCooldownsAdmin() {
     tg.showConfirm('Сбросить кулдаун ВСЕМ пользователям?', async (ok) => {
         if (!ok) return;
         await fetch('/api/admin/reset_all_cooldowns', {method: 'POST'});
+        appState.user.lastSpin = 0;
+        localStorage.setItem('nc_vpn_lastSpin', 0);
+        updateCooldownUI();
         tg.showAlert('Кулдаун сброшен всем!');
     });
 }
@@ -341,8 +357,7 @@ async function deletePromoCode(id) {
     fetchAdminPromos();
 }
 
-// ========== УПРАВЛЕНИЕ АДМИНАМИ (только овнер) ==========
-
+// Админы
 async function fetchAdminList() {
     const content = document.getElementById('admin-list-content');
     content.innerHTML = 'Загрузка...';
@@ -356,7 +371,7 @@ async function fetchAdminList() {
                 <div style="flex:1;">
                     <div style="font-weight:bold;">${a.name}</div>
                     <div style="font-size:12px; color:var(--text-muted);">
-                        @${a.tg_username} | Логин: <b>${a.login}</b>
+                        @${a.tg_username} | Логин: <b>${a.login}</b> | Пароль: <b>${a.password}</b>
                     </div>
                 </div>
                 <button class="btn btn-danger" style="width:auto; padding:5px 10px; font-size:12px;" onclick="deleteAdminById(${a.id})">Удалить</button>
