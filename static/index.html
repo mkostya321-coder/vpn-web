@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css?v=10">
+    <link rel="stylesheet" href="/static/css/style.css?v=11">
     <title>NC VPN</title>
 </head>
 <body>
@@ -16,7 +16,6 @@
     <button class="btn-main" onclick="closeWelcome()">Продолжить</button>
 </div>
 
-<!-- ГЭМБЛ -->
 <div class="modal" id="gamble-modal">
     <div class="modal-content">
         <h2 style="color: var(--promo); margin-bottom: 10px;">Хотите улучшить выигрыш?</h2>
@@ -42,7 +41,6 @@
     </div>
 </div>
 
-<!-- УПРАВЛЕНИЕ ЮЗЕРОМ -->
 <div class="modal" id="user-manage-modal">
     <div class="modal-content" style="text-align: left;">
         <div class="modal-close" onclick="closeUserModal()">✕</div>
@@ -62,6 +60,7 @@
         </div>
 
         <button class="btn" style="margin-bottom: 10px; background: var(--promo);" onclick="adminResetUserCd()">Сбросить кулдаун</button>
+        <button class="btn btn-danger" style="margin-bottom: 15px;" onclick="adminCancelUserTariff()">Снять тариф (без возврата)</button>
         
         <label style="font-size: 12px; color: var(--text-muted);">Выдать тариф:</label>
         <select id="admin-tariff-select" style="margin-bottom: 10px;"></select>
@@ -78,7 +77,6 @@
     </div>
 </div>
 
-<!-- ПОПОЛНЕНИЕ -->
 <div class="modal" id="topup-modal">
     <div class="modal-content">
         <div class="modal-close" onclick="closeTopupModal()">✕</div>
@@ -93,7 +91,6 @@
     </div>
 </div>
 
-<!-- ПРОМОКОД -->
 <div class="modal" id="promo-modal">
     <div class="modal-content">
         <div class="modal-close" onclick="closePromoModal()">✕</div>
@@ -136,7 +133,6 @@
 
 <div class="main-content">
 
-    <!-- ГЛАВНАЯ -->
     <div id="view-home">
         <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -169,7 +165,6 @@
         <button class="btn" style="margin-top: 15px; padding: 15px;" onclick="connectVpn()">Подключить VPN</button>
     </div>
 
-    <!-- ПОДКЛЮЧЕНИЕ -->
     <div id="view-connect" style="display: none;">
         <h2 style="text-align: center; margin-bottom: 20px;">Настройка VPN</h2>
         <div class="card">
@@ -189,7 +184,6 @@
         </div>
     </div>
 
-    <!-- КОЛЕСО -->
     <div id="view-wheel" style="display: none;">
         <div class="card" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);">
             <h3 style="text-align: center;">Колесо Фортуны</h3>
@@ -201,7 +195,6 @@
         </div>
     </div>
 
-    <!-- ПРОФИЛЬ -->
     <div id="view-profile" style="display: none;">
         <div class="card">
             <div style="display: flex; align-items: center; gap: 15px;">
@@ -215,17 +208,24 @@
                 </div>
             </div>
         </div>
+        
+        <div class="card" id="discount-card" style="display: none; border-color: var(--promo); background: rgba(255, 149, 0, 0.1);">
+            <h3 style="font-size:16px; margin-bottom:5px; color:var(--promo);">🎁 Активная скидка</h3>
+            <div style="font-size:15px; font-weight:bold;" id="discount-info"></div>
+        </div>
+
         <div class="card">
             <h3 style="font-size:16px; margin-bottom:10px;">История операций</h3>
             <ul class="history-list" id="transactions-history"><li style="color:var(--text-muted);">Пока пусто</li></ul>
+            <button class="btn" style="margin-top:10px; font-size:12px; padding:8px; display:none;" id="show-all-transactions" onclick="toggleAllTransactions()">Показать все</button>
         </div>
         <div class="card">
             <h3 style="font-size:16px; margin-bottom:10px;">История Колеса</h3>
             <ul class="history-list" id="wheel-history"><li style="color:var(--text-muted);">Пока пусто</li></ul>
+            <button class="btn" style="margin-top:10px; font-size:12px; padding:8px; display:none;" id="show-all-wheel" onclick="toggleAllWheel()">Показать все</button>
         </div>
     </div>
 
-    <!-- ПОДДЕРЖКА -->
     <div id="view-support" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:10px;">Связь с поддержкой</h3>
@@ -235,7 +235,6 @@
         </div>
     </div>
 
-    <!-- ПРОМОКОДЫ -->
     <div id="view-promo" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:10px;">🎁 Промокоды</h3>
@@ -244,13 +243,11 @@
         </div>
     </div>
 
-    <!-- ТАРИФЫ -->
     <div id="view-tariffs" style="display: none;">
         <h3 style="margin-bottom: 15px;">Фиксированные тарифы</h3>
         <div id="user-tariffs-list">Загрузка...</div>
     </div>
 
-    <!-- АДМИН: ВХОД -->
     <div id="view-admin-login" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:10px;">Вход в Админ-панель</h3>
@@ -260,7 +257,6 @@
         </div>
     </div>
 
-    <!-- АДМИН: ПОЛЬЗОВАТЕЛИ -->
     <div id="view-admin-users" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:15px; color:var(--promo);">Пользователи</h3>
@@ -269,7 +265,6 @@
         </div>
     </div>
 
-    <!-- АДМИН: ТАРИФЫ -->
     <div id="view-admin-tariffs" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:15px; color:var(--promo);">Редактор тарифов</h3>
@@ -284,7 +279,6 @@
         </div>
     </div>
 
-    <!-- АДМИН: КОЛЕСО -->
     <div id="view-admin-wheel" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:15px; color:var(--promo);">Конструктор колеса</h3>
@@ -306,7 +300,6 @@
         </div>
     </div>
 
-    <!-- АДМИН: ПРОМОКОДЫ -->
     <div id="view-admin-promos" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:15px; color:var(--promo);">Управление промокодами</h3>
@@ -322,7 +315,6 @@
         </div>
     </div>
 
-    <!-- АДМИН: СПИСОК АДМИНОВ (только овнер) -->
     <div id="view-admin-list" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:15px; color:var(--promo);">👑 Управление админами</h3>
@@ -346,10 +338,10 @@
     Бот для заработка - <a href="https://t.me/ncjobbot" target="_blank">@ncjobbot</a>
 </div>
 
-<script src="/static/js/state.js?v=10"></script>
-<script src="/static/js/user.js?v=10"></script>
-<script src="/static/js/wheel.js?v=10"></script>
-<script src="/static/js/admin.js?v=10"></script>
-<script src="/static/js/main.js?v=10"></script>
+<script src="/static/js/state.js?v=11"></script>
+<script src="/static/js/user.js?v=11"></script>
+<script src="/static/js/wheel.js?v=11"></script>
+<script src="/static/js/admin.js?v=11"></script>
+<script src="/static/js/main.js?v=11"></script>
 </body>
 </html>
