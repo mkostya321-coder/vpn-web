@@ -78,17 +78,25 @@ async function spinWheel() {
         const isOther = prize.prize_type === 'other';
         const prizeValue = isOther ? 0 : prize.value;
 
-        await fetch('/api/wheel/spin', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: prizeValue, prize_label: prize.label, is_other_prize: isOther })
-        });
+        // Только фиксируем кулдаун на сервере — баланс НЕ начисляем!
+        try {
+            await fetch('/api/wheel/spin', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tg_id: appState.user.tg_id,
+                    prize_value: prizeValue,
+                    prize_label: prize.label,
+                    is_other_prize: isOther
+                })
+            });
+        } catch(e) { console.error(e); }
 
         if (isOther) {
             tg.showAlert(`🎉 <b>ПОЗДРАВЛЯЕМ! ВЫ ВЫИГРАЛИ ПРИЗ!</b> 🎉\n\n🏆 Приз: ${prize.label}\n\nВыигрыш вы получите в течение 48 часов. Возможны уточнения от администратора, ожидайте!`);
             recordWheelToHistory(`Приз: ${prize.label}`);
         } else if (prize.value > 0) {
             appState.currentPendingWin = prize.value;
-            appState.upgradeLevel = 0; 
+            appState.upgradeLevel = 0;
             document.getElementById('win-amount').textContent = prize.value + ' ₽';
             document.getElementById('gamble-modal').classList.add('open');
         } else {
@@ -99,22 +107,31 @@ async function spinWheel() {
     }, 7000);
 }
 
-function claimWin() {
+async function claimWin() {
     document.getElementById('gamble-modal').classList.remove('open');
     document.getElementById('gamble-game-modal').classList.remove('open');
-    
-    fetch('/api/wheel/spin', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: appState.currentPendingWin, prize_label: `+${appState.currentPendingWin}₽`, is_other_prize: false })
-    });
-    appState.user.balance += appState.currentPendingWin;
-    recordWheelToHistory(`+${appState.currentPendingWin}₽ (Забрал)`);
-    
+
+    const prize = appState.currentPendingWin;
+
+    // Начисляем через сервер только когда юзер реально забрал
+    if (prize > 0) {
+        try {
+            const res = await fetch('/api/wheel/claim', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: prize })
+            });
+            const data = await res.json();
+            if (data.ok) appState.user.balance = data.balance;
+        } catch(e) { console.error(e); }
+        recordWheelToHistory(`+${prize}₽ (Забрал)`);
+    }
+
     appState.currentPendingWin = 0;
     appState.upgradeLevel = 0;
     appState.isGambling = false;
     document.getElementById('spin-btn').textContent = 'Крутить';
     updateUI();
+    loadTransactions();
 }
 
 function startGamble() {
@@ -160,13 +177,16 @@ function runGamble() {
                 document.getElementById('gamble-modal').classList.add('open');
             }
         } else {
-            tg.showAlert('💀 Фортуна отвернулась от вас. Вы потеряли этот выигрыш.');
+            // Проигрыш в апгрейде — сервер вообще не трогаем,
+            // на балансе этих денег и не было, в историю операций ничего не пишем.
+            const lostAmount = appState.currentPendingWin;
+            tg.showAlert(`💀 Фортуна отвернулась. Вы проиграли ${lostAmount}₽.`);
             document.getElementById('gamble-game-modal').classList.remove('open');
+            recordWheelToHistory(`Проиграл ${lostAmount}₽ в апгрейде`);
             appState.currentPendingWin = 0;
             appState.upgradeLevel = 0;
             appState.isGambling = false;
             document.getElementById('spin-btn').textContent = 'Крутить';
-            recordWheelToHistory('Lose (Гэмбл)');
             updateUI();
         }
         btn.disabled = false; btn.textContent = 'Крутить';
