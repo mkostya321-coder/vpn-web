@@ -74,12 +74,11 @@ class Transaction(Base):
     type: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
-# --- НОВАЯ МОДЕЛЬ ---
 class Admin(Base):
     __tablename__ = "admins"
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]                          # Отображаемое имя
-    tg_username: Mapped[str] = mapped_column(index=True)  # Telegram username (без @)
+    name: Mapped[str]
+    tg_username: Mapped[str] = mapped_column(index=True)
     login: Mapped[str]
     password: Mapped[str]
 
