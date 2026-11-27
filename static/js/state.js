@@ -11,6 +11,7 @@ let showAllWheel = false;
 let appState = {
     isAdmin: false,
     isOwner: false,
+    isSpinning: false,
     selectedUserId: null,
     user: {
         tg_id: tg.initDataUnsafe?.user?.id || 123456789,
