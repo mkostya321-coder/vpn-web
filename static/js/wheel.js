@@ -27,6 +27,9 @@ function updateCooldownUI() {
     const timeLeft = (7 * 24 * 60 * 60 * 1000) - (now - appState.user.lastSpin);
 
     if (!appState.wheelEnabled) return;
+    
+    // Если колесо прямо сейчас крутится (идет анимация), не трогаем текст кнопки
+    if (appState.isSpinning) return; 
 
     if (appState.user.lastSpin > 0 && timeLeft > 0) {
         if (!existingOverlay) {
@@ -41,6 +44,7 @@ function updateCooldownUI() {
         const s = Math.floor((timeLeft % (1000 * 60)) / 1000);
         const timeEl = document.getElementById('cooldown-time');
         if(timeEl) timeEl.textContent = `${h}ч.${m.toString().padStart(2, '0')}м.${s.toString().padStart(2, '0')}с`;
+        
         document.getElementById('spin-btn').disabled = true;
         document.getElementById('spin-btn').textContent = 'Кулдаун';
     } else {
@@ -52,10 +56,19 @@ function updateCooldownUI() {
 setInterval(updateCooldownUI, 1000);
 
 let currentRotation = 0;
+
 async function spinWheel() {
-    if (!appState.wheelEnabled || appState.wheelItems.length === 0) return;
+    // Если уже крутится или колесо выключено — игнорируем клик
+    if (!appState.wheelEnabled || appState.wheelItems.length === 0 || appState.isSpinning) return;
+    
+    // СРАЗУ включаем кулдаун и блокируем кнопку
+    appState.isSpinning = true; 
+    appState.user.lastSpin = Date.now();
+    localStorage.setItem('nc_vpn_lastSpin', appState.user.lastSpin);
+
     const btn = document.getElementById('spin-btn');
-    btn.disabled = true; btn.textContent = 'Крутится...';
+    btn.disabled = true; 
+    btn.textContent = 'Крутится...';
     
     const winIndex = Math.floor(Math.random() * appState.wheelItems.length);
     const prize = appState.wheelItems[winIndex];
@@ -71,67 +84,48 @@ async function spinWheel() {
     canvas.style.transform = `rotate(${currentRotation}deg)`;
 
     setTimeout(async () => {
-        appState.user.lastSpin = Date.now();
-        localStorage.setItem('nc_vpn_lastSpin', appState.user.lastSpin);
-        updateCooldownUI();
+        // Анимация закончилась, снимаем флаг блокировки
+        appState.isSpinning = false; 
+        updateCooldownUI(); // Принудительно меняем текст на "Кулдаун"
 
         const isOther = prize.prize_type === 'other';
         const prizeValue = isOther ? 0 : prize.value;
 
-        // Только фиксируем кулдаун на сервере — баланс НЕ начисляем!
-        try {
-            await fetch('/api/wheel/spin', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tg_id: appState.user.tg_id,
-                    prize_value: prizeValue,
-                    prize_label: prize.label,
-                    is_other_prize: isOther
-                })
-            });
-        } catch(e) { console.error(e); }
+        await fetch('/api/wheel/spin', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: prizeValue, prize_label: prize.label, is_other_prize: isOther })
+        });
 
         if (isOther) {
             tg.showAlert(`🎉 <b>ПОЗДРАВЛЯЕМ! ВЫ ВЫИГРАЛИ ПРИЗ!</b> 🎉\n\n🏆 Приз: ${prize.label}\n\nВыигрыш вы получите в течение 48 часов. Возможны уточнения от администратора, ожидайте!`);
             recordWheelToHistory(`Приз: ${prize.label}`);
         } else if (prize.value > 0) {
             appState.currentPendingWin = prize.value;
-            appState.upgradeLevel = 0;
+            appState.upgradeLevel = 0; 
             document.getElementById('win-amount').textContent = prize.value + ' ₽';
             document.getElementById('gamble-modal').classList.add('open');
         } else {
             tg.showAlert('Lose! В следующий раз повезет.');
             recordWheelToHistory('Lose');
         }
-        btn.textContent = 'Крутить';
     }, 7000);
 }
 
-async function claimWin() {
+function claimWin() {
     document.getElementById('gamble-modal').classList.remove('open');
     document.getElementById('gamble-game-modal').classList.remove('open');
-
-    const prize = appState.currentPendingWin;
-
-    // Начисляем через сервер только когда юзер реально забрал
-    if (prize > 0) {
-        try {
-            const res = await fetch('/api/wheel/claim', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: prize })
-            });
-            const data = await res.json();
-            if (data.ok) appState.user.balance = data.balance;
-        } catch(e) { console.error(e); }
-        recordWheelToHistory(`+${prize}₽ (Забрал)`);
-    }
-
+    
+    fetch('/api/wheel/spin', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tg_id: appState.user.tg_id, prize_value: appState.currentPendingWin, prize_label: `+${appState.currentPendingWin}₽`, is_other_prize: false })
+    });
+    appState.user.balance += appState.currentPendingWin;
+    recordWheelToHistory(`+${appState.currentPendingWin}₽ (Забрал)`);
+    
     appState.currentPendingWin = 0;
     appState.upgradeLevel = 0;
     appState.isGambling = false;
-    document.getElementById('spin-btn').textContent = 'Крутить';
     updateUI();
-    loadTransactions();
 }
 
 function startGamble() {
@@ -177,16 +171,12 @@ function runGamble() {
                 document.getElementById('gamble-modal').classList.add('open');
             }
         } else {
-            // Проигрыш в апгрейде — сервер вообще не трогаем,
-            // на балансе этих денег и не было, в историю операций ничего не пишем.
-            const lostAmount = appState.currentPendingWin;
-            tg.showAlert(`💀 Фортуна отвернулась. Вы проиграли ${lostAmount}₽.`);
+            tg.showAlert('💀 Фортуна отвернулась от вас. Вы потеряли этот выигрыш.');
             document.getElementById('gamble-game-modal').classList.remove('open');
-            recordWheelToHistory(`Проиграл ${lostAmount}₽ в апгрейде`);
             appState.currentPendingWin = 0;
             appState.upgradeLevel = 0;
             appState.isGambling = false;
-            document.getElementById('spin-btn').textContent = 'Крутить';
+            recordWheelToHistory('Lose (Гэмбл)');
             updateUI();
         }
         btn.disabled = false; btn.textContent = 'Крутить';
